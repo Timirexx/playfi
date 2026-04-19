@@ -1,48 +1,82 @@
+import { createAppKit } from '@reown/appkit'
+import { WagmiAdapter } from '@reown/appkit-adapter-wagmi'
+import { hedera, hederaTestnet } from '@reown/appkit/networks'
+import { getBalance, sendTransaction, waitForTransactionReceipt } from '@wagmi/core'
+import { parseEther } from 'viem'
+
+const projectId = '1543435671e63ff12e86f80deed48dae'
+
+// Placeholder House Address (Update this in production!)
+const HOUSE_ADDRESS = '0x486455D4eA30666060002f23824594A58737526f'
+
+const wagmiAdapter = new WagmiAdapter({
+  projectId,
+  networks: [hedera, hederaTestnet]
+})
+
+const modal = createAppKit({
+  adapters: [wagmiAdapter],
+  networks: [hedera, hederaTestnet],
+  projectId,
+  metadata: {
+    name: 'PLAYFI',
+    description: 'Hedera Play-to-Earn Arcade',
+    url: 'https://playfi-kohl.vercel.app',
+    icons: ['https://cryptologos.cc/logos/hedera-hbar-logo.svg']
+  },
+  themeMode: 'dark',
+  themeVariables: {
+    '--w3m-accent': '#00f0ff',
+    '--w3m-color-mix': '#00f0ff',
+    '--w3m-color-mix-strength': 15
+  }
+})
+
 const app = {
     state: {
         currentView: 'home',
         isConnected: false,
         walletAddress: null,
-        balance: 0.00,
+        balance: '0.00',
         username: 'Guest',
-        winRate: '0%'
+        winRate: '0%',
+        isProcessingBet: false
     },
 
     init() {
-        console.log('PLAYFI App Initialized');
-        // Check local storage for session
-        const savedSession = localStorage.getItem('playfi_session');
-        if (savedSession) {
-            this.state = JSON.parse(savedSession);
-            this.updateUI();
-        }
+        console.log('[PLAYFI] App initializing...');
+        
+        modal.subscribeAccount((account) => {
+            if (account.isConnected && account.address) {
+                this.handleConnect(account.address);
+            } else if (!account.isConnected) {
+                this.handleDisconnect();
+            }
+        });
+
+        setTimeout(() => {
+            const acc = modal.getAccount();
+            if (acc && acc.isConnected && acc.address) {
+                this.handleConnect(acc.address);
+            }
+        }, 1000);
     },
 
     navigate(viewId) {
-        // Handle views
         document.querySelectorAll('.view').forEach(el => {
             el.classList.remove('section-active');
             el.classList.add('hidden');
         });
         
         let targetView = document.getElementById(`view-${viewId}`);
-        
-        // Lazy load strategy: If the view doesn't exist, show placeholder
         if (!targetView) {
             targetView = document.getElementById('view-placeholder');
             document.getElementById('placeholder-title').innerText = viewId.toUpperCase();
-            
-            // Re-route to actual view if we add it dynamically later
-            // Here we just simulate lazy loading
-            setTimeout(() => {
-                this.showToast(`Module '${viewId}' lazy loaded.`, 'success');
-            }, 1000);
         }
 
         targetView.classList.remove('hidden');
         targetView.classList.add('section-active');
 
-        // Update nav btns
         document.querySelectorAll('.nav-btn').forEach(btn => {
             btn.classList.remove('active');
             if(btn.innerText.toLowerCase().includes(viewId.toLowerCase())) {
@@ -51,85 +85,142 @@ const app = {
         });
     },
 
-    // Wallet Integration
     openWalletModal() {
-        document.getElementById('wallet-modal').classList.remove('hidden');
+        modal.open();
     },
 
-    closeWalletModal() {
-        document.getElementById('wallet-modal').classList.add('hidden');
-        document.getElementById('wallet-status').classList.add('hidden');
-    },
-
-    connectWallet(provider) {
-        const statusEl = document.getElementById('wallet-status');
-        const statusText = document.getElementById('wallet-status-text');
+    async handleConnect(address) {
+        if (!address) return;
+        this.state.isConnected = true;
+        this.state.walletAddress = address;
         
-        statusEl.classList.remove('hidden');
-        statusText.innerText = `Connecting to ${provider}...`;
-
-        // Simulate network delay / Wallet Connect flow
-        setTimeout(() => {
-            this.state.isConnected = true;
-            this.state.walletAddress = `0x${Math.floor(Math.random() * 999999999)}...${Math.floor(Math.random() * 9999)}`;
-            this.state.balance = (Math.random() * 1000 + 100).toFixed(2);
-            this.state.username = `User_${this.state.walletAddress.substring(2,6)}`;
-            this.state.winRate = `${Math.floor(Math.random() * 40 + 40)}%`;
-            
-            this.saveSession();
-            this.updateUI();
-            
-            this.closeWalletModal();
-            this.showToast(`Connected to ${provider} successfully!`, 'success');
-        }, 1500);
-    },
-
-    disconnectWallet() {
-        this.state.isConnected = false;
-        this.state.walletAddress = null;
-        this.saveSession();
+        // Show truncated 0x address initially
+        this.state.username = `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+        this.state.balance = 'Loading...';
         this.updateUI();
-        this.showToast('Wallet disconnected.');
+
+        // 1. Fetch Hedera Native ID (0.0.x) for better user identity
+        try {
+            const response = await fetch(`https://testnet.mirrornode.hedera.com/api/v1/accounts/${address}`);
+            const data = await response.json();
+            if (data && data.account) {
+                console.log('[PLAYFI] Hedera Native ID found:', data.account);
+                this.state.username = data.account; // Format: 0.0.xxxx
+                this.updateUI();
+            }
+        } catch (err) {
+            console.error('[PLAYFI] Mirror Node Error:', err);
+        }
+
+        await this.refreshBalance();
     },
 
-    // UI Updates
-    updateUI() {
-        if (this.state.isConnected) {
-            document.getElementById('connect-btn').classList.add('hidden');
-            document.getElementById('user-profile').classList.remove('hidden');
-            document.getElementById('user-balance').innerText = this.state.balance;
-            document.getElementById('profile-username').innerText = this.state.username;
-            document.querySelector('.win-rate').innerText = `${this.state.winRate} WR`;
-        } else {
-            document.getElementById('connect-btn').classList.remove('hidden');
-            document.getElementById('user-profile').classList.add('hidden');
+    async refreshBalance() {
+        if (!this.state.walletAddress || !this.state.isConnected) return;
+        try {
+            const balanceData = await getBalance(wagmiAdapter.wagmiConfig, {
+                address: this.state.walletAddress,
+            });
+            this.state.balance = parseFloat(balanceData.formatted).toFixed(2);
+            this.updateUI();
+        } catch (error) {
+            console.error('[PLAYFI] Balance Error:', error);
         }
     },
 
-    saveSession() {
-        localStorage.setItem('playfi_session', JSON.stringify(this.state));
-    },
-
-    updateBalance(amount) {
-        if (!this.state.isConnected) return false;
-        const newBalance = parseFloat(this.state.balance) + amount;
-        if (newBalance < 0) return false; // Insufficient funds
+    /**
+     * PROCESS ON-CHAIN BET
+     * This prompts the user to send HBAR to the house address before starting the game.
+     */
+    async processBet(amount) {
+        if (!this.state.isConnected || this.state.isProcessingBet) return false;
         
-        this.state.balance = newBalance.toFixed(2);
-        this.updateUI();
-        this.saveSession();
-        return true;
+        this.state.isProcessingBet = true;
+        this.showTxOverlay('Action Required', 'Please confirm the bet in your wallet...');
+        
+        try {
+            // 1. Send HBAR to House Address
+            const hash = await sendTransaction(wagmiAdapter.wagmiConfig, {
+                to: HOUSE_ADDRESS,
+                value: parseEther(amount.toString()),
+            });
+            
+            this.showTxOverlay('Transaction Pending', 'Waiting for Hedera network confirmation...');
+            
+            // 2. Wait for confirmation
+            await waitForTransactionReceipt(wagmiAdapter.wagmiConfig, { hash });
+            
+            this.hideTxOverlay();
+            this.showToast('Bet confirmed! Good luck!', 'success');
+            await this.refreshBalance();
+            this.state.isProcessingBet = false;
+            return true;
+        } catch (error) {
+            console.error('[PLAYFI] Bet Transaction Error:', error);
+            this.hideTxOverlay();
+            this.showToast(error.shortMessage || 'Transaction failed or rejected', 'error');
+            this.state.isProcessingBet = false;
+            return false;
+        }
     },
 
-    // Notifications
+    showTxOverlay(title, desc) {
+        const overlay = document.getElementById('tx-overlay');
+        const titleEl = document.getElementById('tx-status-title');
+        const descEl = document.getElementById('tx-status-desc');
+        if (overlay && titleEl && descEl) {
+            titleEl.innerText = title;
+            descEl.innerText = desc;
+            overlay.classList.remove('hidden');
+        }
+    },
+
+    hideTxOverlay() {
+        const overlay = document.getElementById('tx-overlay');
+        if (overlay) overlay.classList.add('hidden');
+    },
+
+    handleDisconnect() {
+        this.state.isConnected = false;
+        this.state.walletAddress = null;
+        this.state.balance = '0.00';
+        this.updateUI();
+    },
+
+    updateUI() {
+        const connectBtn = document.getElementById('connect-btn');
+        const userProfile = document.getElementById('user-profile');
+        const userBalanceEl = document.getElementById('user-balance');
+        const profileUsernameEl = document.getElementById('profile-username');
+        const appContainer = document.getElementById('app-container');
+
+        if (this.state.isConnected) {
+            if (connectBtn) connectBtn.classList.add('hidden');
+            if (userProfile) userProfile.classList.remove('hidden');
+            if (userBalanceEl) userBalanceEl.innerText = this.state.balance;
+            if (profileUsernameEl) profileUsernameEl.innerText = this.state.username;
+            if (appContainer) {
+                appContainer.classList.remove('is-locked');
+                document.querySelectorAll('.view').forEach(v => v.classList.remove('game-locked'));
+            }
+        } else {
+            if (connectBtn) connectBtn.classList.remove('hidden');
+            if (userProfile) userProfile.classList.add('hidden');
+            if (appContainer) {
+                appContainer.classList.add('is-locked');
+                document.querySelectorAll('.view').forEach(v => v.classList.add('game-locked'));
+            }
+        }
+    },
+
     showToast(message, type = 'default') {
         const container = document.getElementById('toast-container');
+        if (!container) return;
+        
         const toast = document.createElement('div');
         toast.className = `toast toast-${type}`;
         toast.innerText = message;
-        
         container.appendChild(toast);
-        
         setTimeout(() => {
             toast.style.animation = 'slideIn 0.3s ease reverse forwards';
             setTimeout(() => toast.remove(), 300);
@@ -137,7 +228,8 @@ const app = {
     }
 };
 
-// Initialize App
+window.app = app;
+
 document.addEventListener('DOMContentLoaded', () => {
     app.init();
 });

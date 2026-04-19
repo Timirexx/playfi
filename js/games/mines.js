@@ -2,11 +2,12 @@ const minesGame = {
     state: {
         isRunning: false,
         betAmount: 0,
-        bombCount: 3,
+        bombCount: 15, // PROG: High density for 20% success profile
         bombs: [],
         revealedCount: 0,
         currentMultiplier: 1.00,
-        gameOver: false
+        gameOver: false,
+        houseEdge: 0.10 // Adjusted for the 20% target
     },
 
     el: {
@@ -41,7 +42,7 @@ const minesGame = {
         }
     },
 
-    placeBet() {
+    async placeBet() {
         if (!app.state.isConnected) {
             app.showToast('Please connect your wallet first!', 'error');
             app.openWalletModal();
@@ -54,12 +55,19 @@ const minesGame = {
         }
 
         const amount = parseFloat(this.el.betInput.value);
-        if (isNaN(amount) || amount <= 0 || amount > parseFloat(app.state.balance)) {
-            app.showToast('Invalid bet or insufficient HBAR balance', 'error');
+        if (isNaN(amount) || amount <= 0) {
+            app.showToast('Invalid bet amount', 'error');
             return;
         }
 
-        if (!app.updateBalance(-amount)) return;
+        this.el.btn.disabled = true;
+        
+        // 1. DEDUCT BET INSTANTLY (ON-CHAIN)
+        const success = await app.processBet(amount);
+        if (!success) {
+            this.el.btn.disabled = false;
+            return;
+        }
 
         this.state.betAmount = amount;
         this.state.bombCount = parseInt(this.el.bombSelect.value);
@@ -73,59 +81,66 @@ const minesGame = {
         this.state.currentMultiplier = 1.00;
         
         this.el.btn.innerText = 'Cash Out';
-        this.el.multText.innerText = this.getNextMultiplier().toFixed(2) + 'x';
+        this.el.btn.disabled = false;
+        this.el.multText.innerText = this.calculateMultiplier(1).toFixed(2) + 'x';
         this.el.betInput.disabled = true;
         this.el.bombSelect.disabled = true;
 
-        // Generate bombs
+        // PRE-GENERATION: Board is final.
         this.state.bombs = [];
-        while (this.state.bombs.length < this.state.bombCount) {
-            const r = Math.floor(crypto.getRandomValues(new Uint32Array(1))[0] / (0xffffffff + 1) * 25);
-            if (!this.state.bombs.includes(r)) {
-                this.state.bombs.push(r);
-            }
+        const possibleIndices = Array.from({length: 25}, (_, i) => i);
+        for (let i = possibleIndices.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [possibleIndices[i], possibleIndices[j]] = [possibleIndices[j], possibleIndices[i]];
         }
+        this.state.bombs = possibleIndices.slice(0, this.state.bombCount);
 
-        // Reset UI grid
         const cells = document.querySelectorAll('.mine-cell');
         cells.forEach(cell => {
             cell.className = 'mine-cell';
             cell.innerHTML = '';
         });
         
-        app.showToast(`Mines started with ${this.state.betAmount} HBAR!`, 'success');
+        app.showToast('Grid armed. Find the gems!', 'info');
     },
 
-    getNextMultiplier() {
-        // Simple mock progression algorithm
-        const remainingSafe = 25 - this.state.bombCount - this.state.revealedCount;
-        if (remainingSafe <= 0) return this.state.currentMultiplier;
+    calculateMultiplier(k) {
+        if (k === 0) return 1.0;
+        const n = 25;
+        const b = this.state.bombCount;
         
-        // Base edge 1% roughly, increases dynamically
-        const mult = 25 / remainingSafe * (1 - 0.03);
-        return this.state.currentMultiplier * Math.max(1.05, mult);
+        let multiplier = 1.0;
+        for (let i = 0; i < k; i++) {
+            multiplier *= (n - i) / (n - b - i);
+        }
+        
+        // Apply House Edge
+        return multiplier * (1 - this.state.houseEdge);
     },
 
     clickCell(index, cellEl) {
         if (!this.state.isRunning || this.state.gameOver || cellEl.classList.contains('revealed')) return;
 
+        // Ensure button lock during animation
+        this.el.btn.disabled = true;
+
         if (this.state.bombs.includes(index)) {
-            // Hit a bomb
             cellEl.classList.add('revealed', 'bomb');
             cellEl.innerHTML = '💣';
             this.crash();
         } else {
-            // Hit a gem
             cellEl.classList.add('revealed', 'gem');
             cellEl.innerHTML = '💎';
             this.state.revealedCount++;
             
-            this.state.currentMultiplier = this.getNextMultiplier();
-            this.el.multText.innerText = this.getNextMultiplier().toFixed(2) + 'x';
+            this.state.currentMultiplier = this.calculateMultiplier(this.state.revealedCount);
+            
+            const nextMult = this.calculateMultiplier(this.state.revealedCount + 1);
+            this.el.multText.innerText = nextMult.toFixed(2) + 'x';
             this.el.btn.innerText = `Cash Out (${(this.state.betAmount * this.state.currentMultiplier).toFixed(2)} HBAR)`;
+            this.el.btn.disabled = false;
 
             if (this.state.revealedCount === (25 - this.state.bombCount)) {
-                // Perfect game
                 this.cashOut();
             }
         }
@@ -135,9 +150,10 @@ const minesGame = {
         if (!this.state.isRunning || this.state.gameOver) return;
 
         const winAmount = this.state.betAmount * this.state.currentMultiplier;
-        app.updateBalance(winAmount);
+        app.showToast(`CASHOUT SUCCESS! ${winAmount.toFixed(2)} HBAR added.`, 'success');
         
-        app.showToast(`Cashed out! Won ${winAmount.toFixed(2)} HBAR`, 'success');
+        // In simulation, we update the UI immediately
+        setTimeout(() => app.refreshBalance(), 500);
         this.endGame(true);
     },
 
@@ -153,19 +169,21 @@ const minesGame = {
         this.el.multText.innerText = '0.00x';
         this.el.betInput.disabled = false;
         this.el.bombSelect.disabled = false;
+        this.el.btn.disabled = false;
 
-        // Reveal bombs
         const cells = document.querySelectorAll('.mine-cell');
         this.state.bombs.forEach(bombIndex => {
             const cell = cells[bombIndex];
-            if (!cell.classList.contains('revealed')) {
+            if (cell && !cell.classList.contains('revealed')) {
                 cell.classList.add('revealed', 'bomb');
                 cell.innerHTML = '💣';
-                cell.style.opacity = '0.5';
+                cell.style.opacity = '0.7';
             }
         });
     }
 };
+
+window.minesGame = minesGame;
 
 document.addEventListener('DOMContentLoaded', () => {
     minesGame.init();

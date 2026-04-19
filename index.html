@@ -41,8 +41,12 @@
         </div>
     </nav>
 
-    <!-- Main Application Container -->
-    <main id="app-container">
+    <main id="app-container" class="is-locked">
+        <div id="global-lock-overlay" class="lock-overlay">
+            <h2 class="neon-text">GAMES LOCKED</h2>
+            <p style="margin: 1rem 0; color: var(--text-muted);">Please connect your Hedera wallet to play.</p>
+            <button class="btn btn-glow" onclick="app.openWalletModal()">Connect Wallet</button>
+        </div>
         
         <!-- HOME VIEW -->
         <section id="view-home" class="view section-active">
@@ -107,7 +111,8 @@
                     </div>
                 </div>
 
-                <div class="game-card" onclick="app.navigate('ladder')">
+                <div class="game-card game-disabled">
+                    <div class="coming-soon-badge" style="font-size: 0.8rem;">Coming Soon</div>
                     <div class="card-glow"></div>
                     <div class="card-content">
                         <div class="game-icon">🪜</div>
@@ -117,7 +122,8 @@
                 </div>
 
                 <!-- Quick Play -->
-                <div class="game-card" onclick="app.navigate('color')">
+                <div class="game-card game-disabled">
+                    <div class="coming-soon-badge" style="font-size: 0.8rem;">Coming Soon</div>
                     <div class="card-glow"></div>
                     <div class="card-content">
                         <div class="game-icon">🎨</div>
@@ -126,7 +132,8 @@
                     </div>
                 </div>
 
-                <div class="game-card" onclick="app.navigate('target')">
+                <div class="game-card game-disabled">
+                    <div class="coming-soon-badge" style="font-size: 0.8rem;">Coming Soon</div>
                     <div class="card-glow"></div>
                     <div class="card-content">
                         <div class="game-icon">🎯</div>
@@ -135,7 +142,8 @@
                     </div>
                 </div>
 
-                <div class="game-card" onclick="app.navigate('memory')">
+                <div class="game-card game-disabled">
+                    <div class="coming-soon-badge" style="font-size: 0.8rem;">Coming Soon</div>
                     <div class="card-glow"></div>
                     <div class="card-content">
                         <div class="game-icon">🧠</div>
@@ -233,45 +241,21 @@
 
     </main>
 
-    <!-- Wallet Modal -->
-    <div id="wallet-modal" class="modal-overlay hidden">
-        <div class="modal-content glass-panel">
-            <div class="modal-header">
-                <h3>Connect Wallet</h3>
-                <button class="btn-close" onclick="app.closeWalletModal()">&times;</button>
-            </div>
-            <div class="modal-body">
-                <p class="modal-subtitle">Choose your Hedera connection method</p>
-                
-                <div class="wallet-options">
-                    <button class="wallet-btn" onclick="app.connectWallet('HashPack')">
-                        <img src="https://assets.coingecko.com/coins/images/31338/standard/Hashpack_logo_200x200.png" alt="HashPack">
-                        <span>HashPack</span>
-                    </button>
-                    <button class="wallet-btn" onclick="app.connectWallet('Blade')">
-                        <img src="https://play-lh.googleusercontent.com/9O0_m7v0e_f63YVpC5G8L7Z5x6t5_t6r9D9K5T8q2t5-3v5l8L7g1a_5C6u9m2n0" alt="Blade">
-                        <span>Blade Wallet</span>
-                    </button>
-                    <button class="wallet-btn" onclick="app.connectWallet('WalletConnect')">
-                        <div class="wc-icon">WC</div>
-                        <span>WalletConnect</span>
-                    </button>
-                </div>
-                
-                <div id="wallet-status" class="wallet-status hidden">
-                    <div class="spinner"></div>
-                    <span id="wallet-status-text">Connecting...</span>
-                </div>
-            </div>
+    <!-- Transaction Overlay -->
+    <div id="tx-overlay" class="tx-overlay hidden">
+        <div class="tx-modal glass-panel">
+            <div class="tx-spinner"></div>
+            <h3 id="tx-status-title">Transaction Pending</h3>
+            <p id="tx-status-desc">Please confirm in your wallet...</p>
         </div>
     </div>
 
     <!-- Toast Notifications -->
     <div id="toast-container" class="toast-container"></div>
 
-    <script src="js/app.js"></script>
-    <script src="js/games/crash.js"></script>
-    <script src="js/games/mines.js"></script>
-    <script src="js/games/spin.js"></script>
+    <script type="module" src="/js/app.js"></script>
+    <script type="module" src="/js/games/crash.js"></script>
+    <script type="module" src="/js/games/mines.js"></script>
+    <script type="module" src="/js/games/spin.js"></script>
 </body>
 </html>

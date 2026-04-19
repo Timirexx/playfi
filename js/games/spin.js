@@ -3,13 +3,18 @@ const wheelGame = {
         isRunning: false,
         betAmount: 0,
         currentRotation: 0,
+        // 10 Segments: 8 Losses, 2 Wins (20% Win Rate)
         slices: [
             { text: '0x', mult: 0, color: '#ff3366' },
-            { text: '1.2x', mult: 1.2, color: '#00ccff' },
-            { text: '2x', mult: 2.0, color: '#00e676' },
             { text: '0x', mult: 0, color: '#ff3366' },
-            { text: '5x', mult: 5.0, color: '#ffea00' },
-            { text: '1.5x', mult: 1.5, color: '#aa00ff' }
+            { text: '1.5x', mult: 1.5, color: '#00ccff' },
+            { text: '0x', mult: 0, color: '#ff3366' },
+            { text: '0x', mult: 0, color: '#ff3366' },
+            { text: '5x', mult: 5, color: '#ffea00' },
+            { text: '0x', mult: 0, color: '#ff3366' },
+            { text: '0x', mult: 0, color: '#ff3366' },
+            { text: '0x', mult: 0, color: '#ff3366' },
+            { text: '0x', mult: 0, color: '#ff3366' }
         ]
     },
 
@@ -34,18 +39,17 @@ const wheelGame = {
     },
 
     drawWheel() {
+        if (!this.el.ctx) return;
         const ctx = this.el.ctx;
         const width = this.el.canvas.width;
         const height = this.el.canvas.height;
         const cx = width / 2;
         const cy = height / 2;
         const radius = cx - 10;
-
         const sliceAngle = (2 * Math.PI) / this.state.slices.length;
 
         ctx.clearRect(0, 0, width, height);
         
-        // Draw slice background layer
         for (let i = 0; i < this.state.slices.length; i++) {
             const startAngle = i * sliceAngle;
             const endAngle = startAngle + sliceAngle;
@@ -55,24 +59,20 @@ const wheelGame = {
             ctx.arc(cx, cy, radius, startAngle, endAngle);
             ctx.fillStyle = this.state.slices[i].color;
             ctx.fill();
-            
-            // Draw slice borders
             ctx.lineWidth = 2;
             ctx.strokeStyle = '#050508';
             ctx.stroke();
 
-            // Draw text
             ctx.save();
             ctx.translate(cx, cy);
             ctx.rotate(startAngle + sliceAngle / 2);
             ctx.textAlign = 'right';
             ctx.fillStyle = '#050508';
-            ctx.font = 'bold 24px Outfit';
+            ctx.font = 'bold 20px Outfit';
             ctx.fillText(this.state.slices[i].text, radius - 20, 8);
             ctx.restore();
         }
 
-        // Draw center
         ctx.beginPath();
         ctx.arc(cx, cy, 30, 0, 2 * Math.PI);
         ctx.fillStyle = '#050508';
@@ -82,65 +82,47 @@ const wheelGame = {
         ctx.stroke();
     },
 
-    spin() {
-        if (!app.state.isConnected) {
-            app.showToast('Please connect your wallet first!', 'error');
-            app.openWalletModal();
-            return;
-        }
-
-        if (this.state.isRunning) return;
+    async spin() {
+        if (!app.state.isConnected || this.state.isRunning) return;
 
         const amount = parseFloat(this.el.betInput.value);
-        if (isNaN(amount) || amount <= 0 || amount > parseFloat(app.state.balance)) {
-            app.showToast('Invalid bet or insufficient HBAR balance', 'error');
+        if (isNaN(amount) || amount <= 0) {
+            app.showToast('Invalid bet amount', 'error');
             return;
         }
 
-        if (!app.updateBalance(-amount)) return;
+        this.el.btn.disabled = true;
+        
+        // 1. DEDUCT BET INSTANTLY (ON-CHAIN)
+        const success = await app.processBet(amount);
+        if (!success) {
+            this.el.btn.disabled = false;
+            return;
+        }
 
         this.state.betAmount = amount;
         this.state.isRunning = true;
-        
-        this.el.btn.disabled = true;
         this.el.betInput.disabled = true;
         this.el.resultDisplay.classList.add('hidden');
 
-        // Logic
-        // We pick a random segment
+        // BIASED SELECTION (80% Loss, 20% Win)
+        const winningIndex = Math.floor(Math.random() * this.state.slices.length);
+        
         const numSlices = this.state.slices.length;
-        // Pseudo-random fair selection
-        const rand = crypto.getRandomValues(new Uint32Array(1))[0] / (0xffffffff + 1);
-        
-        // House edge tweak: If rand lands on high mult (5x), re-roll 50% of the time
-        let winningIndex = Math.floor(rand * numSlices);
-        if (this.state.slices[winningIndex].mult === 5 && Math.random() < 0.5) {
-             winningIndex = 0; // fallback to 0x slice
-        }
-
         const sliceAngleDeg = 360 / numSlices;
+        const extraSpins = 10; 
         
-        // Target angle points to the center of the winning slice
-        // Note: The pointer is at top (-90 deg from standard 0 at right).
-        // Standard drawn slice 0 is from 0 to 60 deg on right side.
-        // We need to rotate the canvas so the winning slice is at 270 deg / -90 deg.
+        const sliceCenter = (winningIndex * sliceAngleDeg) + (sliceAngleDeg / 2);
+        const rotationNeeded = (270 - sliceCenter); // land at top pointer
         
-        const extraSpins = 4; // 4 full rotations
-        
-        // The angle needed to place slice 0 at top pointer is -90 - 30 = -120deg (or 240deg).
-        // Let's just do mathematical offset.
-        // Actually, CSS rotation goes clockwise.
-        // We want to stop at: baseOffset + (numSlices - winningIndex) * sliceAngleDeg
-        const stopAngle = (extraSpins * 360) + (360 - (winningIndex * sliceAngleDeg)) - 90 - (sliceAngleDeg/2);
-        
-        this.state.currentRotation += stopAngle;
+        this.state.currentRotation += (extraSpins * 360) + rotationNeeded;
 
+        this.el.canvas.style.transition = 'transform 4s cubic-bezier(0.15, 0, 0.15, 1)';
         this.el.canvas.style.transform = `rotate(${this.state.currentRotation}deg)`;
 
-        // Wait for CSS transition (3s)
         setTimeout(() => {
             this.endSpin(winningIndex);
-        }, 3000);
+        }, 4100);
     },
 
     endSpin(index) {
@@ -155,13 +137,15 @@ const wheelGame = {
 
         if (slice.mult > 0) {
             const winAmount = this.state.betAmount * slice.mult;
-            app.updateBalance(winAmount);
-            app.showToast(`You won ${winAmount.toFixed(2)} HBAR!`, 'success');
+            app.showToast(`JACKPOT! You won ${winAmount.toFixed(2)} HBAR.`, 'success');
+            setTimeout(() => app.refreshBalance(), 500);
         } else {
-            app.showToast(`You lost ${this.state.betAmount} HBAR.`, 'error');
+            app.showToast(`Better luck next time! Lost ${this.state.betAmount} HBAR.`, 'error');
         }
     }
 };
+
+window.wheelGame = wheelGame;
 
 document.addEventListener('DOMContentLoaded', () => {
     wheelGame.init();
