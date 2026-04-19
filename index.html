@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PLAYFI | Hedera Play-to-Earn</title>
+    <meta name="description" content="PLAYFI - A fast, addictive Play-to-Earn mini-game platform powered by Hedera.">
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@600;700;900&display=swap" rel="stylesheet">
+    <!-- Styles -->
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <!-- Background Effects -->
+    <div class="bg-glow"></div>
+
+    <!-- Navigation -->
+    <nav class="navbar glass-panel">
+        <div class="nav-brand" onclick="app.navigate('home')">
+            <span class="brand-text">PLAYFI</span>
+        </div>
+        <div class="nav-links">
+            <button class="nav-btn active" onclick="app.navigate('home')">Hub</button>
+            <button class="nav-btn" onclick="app.navigate('rewards')">Daily Rewards</button>
+            <button class="nav-btn" onclick="app.navigate('leaderboard')">Leaderboard</button>
+        </div>
+        <div class="nav-wallet">
+            <div id="user-profile" class="hidden">
+                <div class="profile-stats">
+                    <span id="profile-username" class="username">Player1</span>
+                    <span class="win-rate text-blue">54% WR</span>
+                </div>
+                <div class="stat-pill hbar-pill">
+                    <img src="https://cryptologos.cc/logos/hedera-hbar-logo.svg?v=029" alt="HBAR" class="token-icon">
+                    <span id="user-balance">0.00</span>
+                </div>
+            </div>
+            <button id="connect-btn" class="btn btn-glow" onclick="app.openWalletModal()">Connect Wallet</button>
+        </div>
+    </nav>
+
+    <!-- Main Application Container -->
+    <main id="app-container">
+        
+        <!-- HOME VIEW -->
+        <section id="view-home" class="view section-active">
+            
+            <!-- HERO: Crash Game -->
+            <div class="hero-section">
+                <div class="hero-header">
+                    <h2 class="neon-text outline-text">CRASH</h2>
+                    <div class="live-status"><span class="pulse-dot"></span> LIVE</div>
+                </div>
+                
+                <div class="crash-container">
+                    <!-- Graph UI -->
+                    <div class="crash-graph">
+                        <canvas id="crash-canvas"></canvas>
+                        <div class="multiplier-display">
+                            <span id="crash-multiplier">1.00x</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Controls -->
+                    <div class="crash-controls glass-panel">
+                        <div class="bet-input-group">
+                            <label>Bet Amount (HBAR)</label>
+                            <div class="input-wrapper">
+                                <input type="number" id="crash-bet" value="10" min="1">
+                                <span class="input-currency">HBAR</span>
+                            </div>
+                            <div class="bet-presets">
+                                <button onclick="document.getElementById('crash-bet').value=10">10</button>
+                                <button onclick="document.getElementById('crash-bet').value=50">50</button>
+                                <button onclick="document.getElementById('crash-bet').value=100">100</button>
+                            </div>
+                        </div>
+                        <button id="crash-action-btn" class="btn btn-hero btn-glow" onclick="crashGame.placeBet()">Place Bet</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- GAME GRID -->
+            <div class="section-title">
+                <h3><span class="icon">🧩</span> Mini Games</h3>
+            </div>
+            
+            <div class="game-grid">
+                <!-- High Engagement -->
+                <div class="game-card" onclick="app.navigate('mines')">
+                    <div class="card-glow"></div>
+                    <div class="card-content">
+                        <div class="game-icon">💣</div>
+                        <h4>Mines</h4>
+                        <p>High Engagement</p>
+                    </div>
+                </div>
+                
+                <div class="game-card" onclick="app.navigate('spin')">
+                    <div class="card-glow"></div>
+                    <div class="card-content">
+                        <div class="game-icon">🎡</div>
+                        <h4>Spin to Win</h4>
+                        <p>Risk Tiers</p>
+                    </div>
+                </div>
+
+                <div class="game-card" onclick="app.navigate('ladder')">
+                    <div class="card-glow"></div>
+                    <div class="card-content">
+                        <div class="game-icon">🪜</div>
+                        <h4>Ladder Climb</h4>
+                        <p>High Engagement</p>
+                    </div>
+                </div>
+
+                <!-- Quick Play -->
+                <div class="game-card" onclick="app.navigate('color')">
+                    <div class="card-glow"></div>
+                    <div class="card-content">
+                        <div class="game-icon">🎨</div>
+                        <h4>Color Predict</h4>
+                        <p>Quick Play</p>
+                    </div>
+                </div>
+
+                <div class="game-card" onclick="app.navigate('target')">
+                    <div class="card-glow"></div>
+                    <div class="card-content">
+                        <div class="game-icon">🎯</div>
+                        <h4>Target Hit</h4>
+                        <p>Quick Play</p>
+                    </div>
+                </div>
+
+                <div class="game-card" onclick="app.navigate('memory')">
+                    <div class="card-glow"></div>
+                    <div class="card-content">
+                        <div class="game-icon">🧠</div>
+                        <h4>Memory Match</h4>
+                        <p>Skill Based</p>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- MINES VIEW -->
+        <section id="view-mines" class="view hidden">
+            <button class="btn btn-glow" onclick="app.navigate('home')" style="margin-bottom: 2rem;">&larr; Back to Hub</button>
+            <div class="hero-section">
+                <div class="hero-header">
+                    <h2 class="neon-text outline-text text-center" style="width: 100%;">MINES FIELD</h2>
+                </div>
+                
+                <div class="crash-container">
+                    <div class="crash-graph" style="padding: 1rem;">
+                        <div id="mines-grid" class="mines-grid">
+                            <!-- 25 cells generated by JS -->
+                        </div>
+                    </div>
+                    
+                    <div class="crash-controls glass-panel">
+                        <div class="bet-input-group">
+                            <label>Bet Amount (HBAR)</label>
+                            <div class="input-wrapper">
+                                <input type="number" id="mines-bet" value="50" min="1">
+                                <span class="input-currency">HBAR</span>
+                            </div>
+                        </div>
+                        <div class="bet-input-group" style="margin-top: 1rem;">
+                            <label>Bombs Amount (1-24)</label>
+                            <select id="mines-count" class="input-wrapper" style="width: 100%; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 1rem; color: white; outline: none;">
+                                <option value="3">3 Bombs</option>
+                                <option value="5">5 Bombs</option>
+                                <option value="10">10 Bombs</option>
+                            </select>
+                        </div>
+                        <div class="stat-pill" style="margin-top: 1rem; justify-content: center; font-size: 1.2rem;">
+                            Next Multiplier: <span id="mines-next-mult" class="text-blue" style="margin-left: 0.5rem; font-weight: bold;">0.00x</span>
+                        </div>
+                        <button id="mines-action-btn" class="btn btn-hero btn-glow" onclick="minesGame.placeBet()">Start Game</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SPIN TO WIN VIEW -->
+        <section id="view-spin" class="view hidden">
+            <button class="btn btn-glow" onclick="app.navigate('home')" style="margin-bottom: 2rem;">&larr; Back to Hub</button>
+            <div class="hero-section">
+                <div class="hero-header">
+                    <h2 class="neon-text outline-text text-center" style="width: 100%;">SPIN TO WIN</h2>
+                </div>
+                
+                <div class="crash-container">
+                    <div class="crash-graph" style="position: relative;">
+                        <div class="wheel-pointer"></div>
+                        <canvas id="wheel-canvas" width="300" height="300"></canvas>
+                        <div id="wheel-result" class="multiplier-display hidden" style="font-size: 3rem;">-</div>
+                    </div>
+                    
+                    <div class="crash-controls glass-panel">
+                        <div class="bet-input-group">
+                            <label>Bet Amount (HBAR)</label>
+                            <div class="input-wrapper">
+                                <input type="number" id="wheel-bet" value="25" min="1">
+                                <span class="input-currency">HBAR</span>
+                            </div>
+                            <div class="bet-presets">
+                                <button onclick="document.getElementById('wheel-bet').value=10">10</button>
+                                <button onclick="document.getElementById('wheel-bet').value=25">25</button>
+                                <button onclick="document.getElementById('wheel-bet').value=100">100</button>
+                            </div>
+                        </div>
+                        <button id="wheel-action-btn" class="btn btn-hero btn-glow" onclick="wheelGame.spin()">Spin Wheel</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- GAMES PLACEHOLDER VIEWS -->
+        <section id="view-placeholder" class="view hidden">
+            <button class="btn btn-glow" onclick="app.navigate('home')" style="margin-bottom: 2rem;">&larr; Back to Hub</button>
+            <div class="glass-panel text-center" style="padding: 4rem 2rem; margin-top: 2rem;">
+                <h2 class="neon-text" id="placeholder-title">Game</h2>
+                <p>Fast, addictive gameplay loading...</p>
+                <div class="skeleton-loader" style="height: 300px; max-width: 600px; margin: 2rem auto; border-radius: 12px;"></div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Wallet Modal -->
+    <div id="wallet-modal" class="modal-overlay hidden">
+        <div class="modal-content glass-panel">
+            <div class="modal-header">
+                <h3>Connect Wallet</h3>
+                <button class="btn-close" onclick="app.closeWalletModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-subtitle">Choose your Hedera connection method</p>
+                
+                <div class="wallet-options">
+                    <button class="wallet-btn" onclick="app.connectWallet('HashPack')">
+                        <img src="https://assets.coingecko.com/coins/images/31338/standard/Hashpack_logo_200x200.png" alt="HashPack">
+                        <span>HashPack</span>
+                    </button>
+                    <button class="wallet-btn" onclick="app.connectWallet('Blade')">
+                        <img src="https://play-lh.googleusercontent.com/9O0_m7v0e_f63YVpC5G8L7Z5x6t5_t6r9D9K5T8q2t5-3v5l8L7g1a_5C6u9m2n0" alt="Blade">
+                        <span>Blade Wallet</span>
+                    </button>
+                    <button class="wallet-btn" onclick="app.connectWallet('WalletConnect')">
+                        <div class="wc-icon">WC</div>
+                        <span>WalletConnect</span>
+                    </button>
+                </div>
+                
+                <div id="wallet-status" class="wallet-status hidden">
+                    <div class="spinner"></div>
+                    <span id="wallet-status-text">Connecting...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="js/app.js"></script>
+    <script src="js/games/crash.js"></script>
+    <script src="js/games/mines.js"></script>
+    <script src="js/games/spin.js"></script>
+</body>
+</html>
