@@ -160,6 +160,7 @@ const minesGame = {
     crash() {
         this.state.gameOver = true;
         app.showToast(`Boom! You lost ${this.state.betAmount} HBAR.`, 'error');
+        setTimeout(() => app.refreshBalance(), 500);
         this.endGame(false);
     },
 

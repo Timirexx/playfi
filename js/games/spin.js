@@ -141,6 +141,7 @@ const wheelGame = {
             setTimeout(() => app.refreshBalance(), 500);
         } else {
             app.showToast(`Better luck next time! Lost ${this.state.betAmount} HBAR.`, 'error');
+            setTimeout(() => app.refreshBalance(), 500);
         }
     }
 };

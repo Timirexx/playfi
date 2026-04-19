@@ -54,6 +54,14 @@ const app = {
             }
         });
 
+        const refreshBtn = document.getElementById('refresh-balance-btn');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.refreshBalance(true);
+            });
+        }
+
         setTimeout(() => {
             const acc = modal.getAccount();
             if (acc && acc.isConnected && acc.address) {
@@ -115,16 +123,35 @@ const app = {
         await this.refreshBalance();
     },
 
-    async refreshBalance() {
+    async refreshBalance(isManual = false) {
         if (!this.state.walletAddress || !this.state.isConnected) return;
+        
+        const balanceEl = document.getElementById('user-balance');
+        const refreshBtn = document.getElementById('refresh-balance-btn');
+        
+        if (isManual || balanceEl.innerText === 'Loading...') {
+            if (refreshBtn) refreshBtn.classList.add('is-refreshing');
+            if (!isManual) this.state.balance = 'Loading...';
+            this.updateUI();
+        }
+
         try {
             const balanceData = await getBalance(wagmiAdapter.wagmiConfig, {
                 address: this.state.walletAddress,
             });
+            
             this.state.balance = parseFloat(balanceData.formatted).toFixed(2);
-            this.updateUI();
+            this.state.balanceError = false;
         } catch (error) {
             console.error('[PLAYFI] Balance Error:', error);
+            this.state.balance = '---';
+            this.state.balanceError = true;
+            if (isManual) this.showToast('Unable to fetch balance', 'error');
+        } finally {
+            if (refreshBtn) {
+                setTimeout(() => refreshBtn.classList.remove('is-refreshing'), 500);
+            }
+            this.updateUI();
         }
     },
 
@@ -197,7 +224,10 @@ const app = {
         if (this.state.isConnected) {
             if (connectBtn) connectBtn.classList.add('hidden');
             if (userProfile) userProfile.classList.remove('hidden');
-            if (userBalanceEl) userBalanceEl.innerText = this.state.balance;
+            if (userBalanceEl) {
+                userBalanceEl.innerText = this.state.balance;
+                userBalanceEl.style.color = this.state.balanceError ? 'var(--danger)' : 'var(--neon-blue)';
+            }
             if (profileUsernameEl) profileUsernameEl.innerText = this.state.username;
             if (appContainer) {
                 appContainer.classList.remove('is-locked');

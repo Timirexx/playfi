@@ -172,7 +172,65 @@ h1, h2, h3, h4, .brand-text {
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.token-icon { width: 16px; height: 16px; }
+.token-icon { width: 16px; height: 16px; pointer-events: none; }
+
+.hbar-pill {
+    background: rgba(0, 240, 255, 0.08);
+    border: 1px solid rgba(0, 240, 255, 0.3);
+    box-shadow: 0 0 10px rgba(0, 240, 255, 0.05);
+    padding: 0.5rem 1rem;
+    transition: var(--transition);
+}
+
+.hbar-pill:hover {
+    background: rgba(0, 240, 255, 0.12);
+    border-color: rgba(0, 240, 255, 0.5);
+    box-shadow: 0 0 15px rgba(0, 240, 255, 0.1);
+}
+
+#user-balance {
+    font-weight: 700;
+    color: var(--neon-blue);
+    font-variant-numeric: tabular-nums;
+}
+
+.currency-label {
+    font-size: 0.7rem;
+    font-weight: 800;
+    color: var(--text-muted);
+    margin-left: -2px;
+}
+
+.refresh-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    padding: 2px;
+    margin-left: 0.5rem;
+    transition: var(--transition);
+    opacity: 0.7;
+}
+
+.refresh-btn:hover {
+    color: var(--neon-blue);
+    opacity: 1;
+}
+
+.refresh-btn svg {
+    transition: transform 0.3s ease;
+}
+
+.refresh-btn:active svg {
+    transform: scale(0.9);
+}
+
+.is-refreshing svg {
+    animation: spin 1s linear infinite;
+    color: var(--neon-blue);
+}
 
 /* Views */
 .view {

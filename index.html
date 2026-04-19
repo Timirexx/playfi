@@ -30,11 +30,14 @@
             <div id="user-profile" class="hidden">
                 <div class="profile-stats">
                     <span id="profile-username" class="username">Player1</span>
-                    <span class="win-rate text-blue">54% WR</span>
                 </div>
-                <div class="stat-pill hbar-pill">
+                <div class="stat-pill hbar-pill" id="balance-container">
                     <img src="https://cryptologos.cc/logos/hedera-hbar-logo.svg?v=029" alt="HBAR" class="token-icon">
                     <span id="user-balance">0.00</span>
+                    <span class="currency-label">HBAR</span>
+                    <button id="refresh-balance-btn" class="refresh-btn" title="Refresh Balance">
+                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                    </button>
                 </div>
             </div>
             <button id="connect-btn" class="btn btn-glow" onclick="app.openWalletModal()">Connect Wallet</button>
