@@ -50,6 +50,11 @@ const wheelGame = {
 
         ctx.clearRect(0, 0, width, height);
         
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(-Math.PI / 2); // Start at 12 o'clock
+        ctx.translate(-cx, -cy);
+
         for (let i = 0; i < this.state.slices.length; i++) {
             const startAngle = i * sliceAngle;
             const endAngle = startAngle + sliceAngle;
@@ -72,6 +77,7 @@ const wheelGame = {
             ctx.fillText(this.state.slices[i].text, radius - 20, 8);
             ctx.restore();
         }
+        ctx.restore();
 
         ctx.beginPath();
         ctx.arc(cx, cy, 30, 0, 2 * Math.PI);
@@ -88,6 +94,13 @@ const wheelGame = {
         const amount = parseFloat(this.el.betInput.value);
         if (isNaN(amount) || amount <= 0) {
             app.showToast('Invalid bet amount', 'error');
+            return;
+        }
+
+        // Balance check
+        const currentBalance = parseFloat(app.state.balance);
+        if (!isNaN(currentBalance) && amount > currentBalance) {
+            app.showToast(`Insufficient balance! You only have ${currentBalance.toFixed(2)} HBAR.`, 'error');
             return;
         }
 

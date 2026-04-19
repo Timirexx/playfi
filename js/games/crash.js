@@ -97,6 +97,7 @@ const crashGame = {
         this.state.isRunning = true;
         this.state.multiplier = 1.00;
         this.state.crashPoint = this.generateCrashPoint();
+        this.state.betCashedOut = false;
         this.history = [{x: 0, y: 1.00}];
         
         this.el.displayArea.classList.remove('crashed');
@@ -105,11 +106,18 @@ const crashGame = {
         this.el.btn.disabled = false;
         this.el.btn.classList.add('btn-hero-cashout');
         document.querySelector('.live-status').innerText = '🚀 IN PROGRESS...';
+
+        // Clear the canvas for a fresh round
+        if (this.el.ctx) {
+            this.el.ctx.clearRect(0, 0, this.el.canvas.width, this.el.canvas.height);
+        }
         
         let speed = 90; 
         let rate = 0.01;
 
         const tick = () => {
+            if (!this.state.isRunning) return; // Guard: stop if cashed out
+
             this.state.multiplier += rate;
             
             if(this.state.multiplier > 2.0) rate = 0.02;
@@ -133,19 +141,24 @@ const crashGame = {
 
     cashOut() {
         if (!this.state.isRunning || this.state.betAmount === 0) return;
+
+        // STOP the ticker immediately
+        this.state.isRunning = false;
+        this.state.betCashedOut = true;
+        clearTimeout(this.state.intervalId);
         
         const winAmount = this.state.betAmount * this.state.multiplier;
+        app.showToast(`WINNER! Cashed out ${winAmount.toFixed(2)} HBAR at ${this.state.multiplier.toFixed(2)}x! 🎉`, 'success');
         
-        // Simulating the automatic payout to the UI state
-        // In reality, this would be a backend/contract transfer
-        app.showToast(`WINNER! ${winAmount.toFixed(2)} HBAR sent back to wallet.`, 'success');
-        
-        this.el.btn.innerText = 'WINNER!';
-        this.el.btn.disabled = true;
-        this.state.betAmount = 0; 
+        this.el.btn.innerText = 'Place Bet';
+        this.el.btn.disabled = false;
+        this.el.btn.classList.remove('btn-hero-cashout');
+        document.querySelector('.live-status').innerHTML = '<span class="pulse-dot"></span> LIVE';
+
+        this.state.betAmount = 0;
         
         // Refresh visible balance to reflect incoming (simulated) funds
-        setTimeout(() => app.refreshBalance(), 1000);
+        setTimeout(() => app.refreshBalance(), 800);
     },
 
     crash() {

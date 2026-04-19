@@ -2,12 +2,12 @@ const minesGame = {
     state: {
         isRunning: false,
         betAmount: 0,
-        bombCount: 15, // PROG: High density for 20% success profile
+        bombCount: 5, // Default matching dropdown default
         bombs: [],
         revealedCount: 0,
         currentMultiplier: 1.00,
         gameOver: false,
-        houseEdge: 0.10 // Adjusted for the 20% target
+        houseEdge: 0.10
     },
 
     el: {
@@ -60,9 +60,15 @@ const minesGame = {
             return;
         }
 
+        // Balance check
+        const currentBalance = parseFloat(app.state.balance);
+        if (!isNaN(currentBalance) && amount > currentBalance) {
+            app.showToast(`Insufficient balance! You only have ${currentBalance.toFixed(2)} HBAR.`, 'error');
+            return;
+        }
+
         this.el.btn.disabled = true;
         
-        // 1. DEDUCT BET INSTANTLY (ON-CHAIN)
         const success = await app.processBet(amount);
         if (!success) {
             this.el.btn.disabled = false;
@@ -80,11 +86,16 @@ const minesGame = {
         this.state.revealedCount = 0;
         this.state.currentMultiplier = 1.00;
         
-        this.el.btn.innerText = 'Cash Out';
+        this.el.btn.innerText = 'Start Game';
         this.el.btn.disabled = false;
         this.el.multText.innerText = this.calculateMultiplier(1).toFixed(2) + 'x';
         this.el.betInput.disabled = true;
         this.el.bombSelect.disabled = true;
+
+        // Cashout is locked until at least 1 gem is revealed
+        this.el.btn.onclick = null; // Disable click until gem revealed
+        this.el.btn.style.opacity = '0.5';
+        this.el.btn.title = 'Reveal at least 1 gem to Cash Out';
 
         // PRE-GENERATION: Board is final.
         this.state.bombs = [];
@@ -137,7 +148,12 @@ const minesGame = {
             
             const nextMult = this.calculateMultiplier(this.state.revealedCount + 1);
             this.el.multText.innerText = nextMult.toFixed(2) + 'x';
+
+            // Enable Cash Out after at least 1 gem is revealed
             this.el.btn.innerText = `Cash Out (${(this.state.betAmount * this.state.currentMultiplier).toFixed(2)} HBAR)`;
+            this.el.btn.style.opacity = '1';
+            this.el.btn.title = '';
+            this.el.btn.onclick = () => minesGame.placeBet();
             this.el.btn.disabled = false;
 
             if (this.state.revealedCount === (25 - this.state.bombCount)) {
@@ -167,6 +183,9 @@ const minesGame = {
     endGame(won) {
         this.state.isRunning = false;
         this.el.btn.innerText = 'Start Game';
+        this.el.btn.style.opacity = '1';
+        this.el.btn.title = '';
+        this.el.btn.onclick = () => minesGame.placeBet();
         this.el.multText.innerText = '0.00x';
         this.el.betInput.disabled = false;
         this.el.bombSelect.disabled = false;
@@ -176,9 +195,8 @@ const minesGame = {
         this.state.bombs.forEach(bombIndex => {
             const cell = cells[bombIndex];
             if (cell && !cell.classList.contains('revealed')) {
-                cell.classList.add('revealed', 'bomb');
+                cell.classList.add('revealed', 'bomb', 'bomb-dim');
                 cell.innerHTML = '💣';
-                cell.style.opacity = '0.7';
             }
         });
     }

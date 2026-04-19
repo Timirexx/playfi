@@ -636,6 +636,12 @@ input[type="number"]:focus {
     box-shadow: 0 0 15px rgba(255, 51, 102, 0.4);
 }
 
+.mine-cell.revealed.bomb.bomb-dim {
+    opacity: 0.6;
+    filter: grayscale(0.5);
+    box-shadow: none;
+}
+
 /* Spin Wheel Game */
 #wheel-canvas {
     display: block;
