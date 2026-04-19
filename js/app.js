@@ -136,12 +136,15 @@ const app = {
         }
 
         try {
+            const chainId = modal.getChainId();
             const balanceData = await getBalance(wagmiAdapter.wagmiConfig, {
                 address: this.state.walletAddress,
+                chainId: chainId
             });
             
             const rawBalance = parseFloat(balanceData.formatted);
-            this.state.balance = isNaN(rawBalance) ? '0.00' : rawBalance.toFixed(2);
+            const networkName = chainId === 296 ? ' (Testnet)' : '';
+            this.state.balance = (isNaN(rawBalance) ? '0.00' : rawBalance.toFixed(2)) + networkName;
             this.state.balanceError = false;
         } catch (error) {
             console.error('[PLAYFI] Balance Error:', error);
