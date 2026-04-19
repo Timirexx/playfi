@@ -174,8 +174,20 @@ const app = {
             
             this.showTxOverlay('Transaction Pending', 'Waiting for Hedera network confirmation...');
             
-            // 2. Wait for confirmation
-            await waitForTransactionReceipt(wagmiAdapter.wagmiConfig, { hash });
+            // 2. Wait for confirmation with a safe timeout
+            // Hedera is fast, but JSON-RPC relays can sometimes lag.
+            try {
+                await waitForTransactionReceipt(wagmiAdapter.wagmiConfig, { 
+                    hash,
+                    timeout: 25000 // 25s timeout
+                });
+            } catch (waitError) {
+                console.warn('[PLAYFI] Transaction receipt timeout, checking mirror node fallback...', waitError);
+                
+                // Fallback: Manually check Mirror Node for consensus
+                const isConfirmed = await this.verifyTxOnMirrorNode(hash);
+                if (!isConfirmed) throw new Error('Transaction confirmation timed out. Please check your wallet history.');
+            }
             
             this.hideTxOverlay();
             this.showToast('Bet confirmed! Good luck!', 'success');
@@ -185,10 +197,39 @@ const app = {
         } catch (error) {
             console.error('[PLAYFI] Bet Transaction Error:', error);
             this.hideTxOverlay();
-            this.showToast(error.shortMessage || 'Transaction failed or rejected', 'error');
+            
+            const msg = error.shortMessage || error.message || 'Transaction failed or rejected';
+            this.showToast(msg, 'error');
+            
             this.state.isProcessingBet = false;
             return false;
         }
+    },
+
+    /**
+     * MIRROR NODE FALLBACK
+     * Checks if the transaction has reached consensus even if the RPC relay is lagging.
+     */
+    async verifyTxOnMirrorNode(hash) {
+        // Hedera Testnet/Mainnet Mirror Node check
+        const isTestnet = modal.getChainId() === 296;
+        const baseUrl = isTestnet ? 'https://testnet.mirrornode.hedera.com' : 'https://mainnet-public.mirrornode.hedera.com';
+        
+        for (let i = 0; i < 5; i++) { // Poll 5 times
+            try {
+                const response = await fetch(`${baseUrl}/api/v1/transactions/${hash}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.transactions && data.transactions.length > 0) {
+                        return data.transactions[0].result === 'SUCCESS';
+                    }
+                }
+            } catch (e) {
+                console.error('[PLAYFI] Mirror Node Fallback Error:', e);
+            }
+            await new Promise(r => setTimeout(r, 2000)); // Wait 2s between polls
+        }
+        return false;
     },
 
     showTxOverlay(title, desc) {
