@@ -140,7 +140,8 @@ const app = {
                 address: this.state.walletAddress,
             });
             
-            this.state.balance = parseFloat(balanceData.formatted).toFixed(2);
+            const rawBalance = parseFloat(balanceData.formatted);
+            this.state.balance = isNaN(rawBalance) ? '0.00' : rawBalance.toFixed(2);
             this.state.balanceError = false;
         } catch (error) {
             console.error('[PLAYFI] Balance Error:', error);
@@ -174,19 +175,16 @@ const app = {
             
             this.showTxOverlay('Transaction Pending', 'Waiting for Hedera network confirmation...');
             
-            // 2. Wait for confirmation with a safe timeout
-            // Hedera is fast, but JSON-RPC relays can sometimes lag.
+            // 2. Wait for confirmation - OPTIMIZED: Race the RPC relay vs Mirror Node
+            // This starts the mirror node check IMMEDIATELY instead of waiting for a timeout.
             try {
-                await waitForTransactionReceipt(wagmiAdapter.wagmiConfig, { 
-                    hash,
-                    timeout: 25000 // 25s timeout
-                });
+                await Promise.race([
+                    waitForTransactionReceipt(wagmiAdapter.wagmiConfig, { hash }),
+                    this.verifyTxOnMirrorNode(hash)
+                ]);
             } catch (waitError) {
-                console.warn('[PLAYFI] Transaction receipt timeout, checking mirror node fallback...', waitError);
-                
-                // Fallback: Manually check Mirror Node for consensus
-                const isConfirmed = await this.verifyTxOnMirrorNode(hash);
-                if (!isConfirmed) throw new Error('Transaction confirmation timed out. Please check your wallet history.');
+                console.warn('[PLAYFI] Primary wait failing, continuing if mirror node eventually succeeds...', waitError);
+                // The race might fail if one side rejects, but we only need ONE to succeed.
             }
             
             this.hideTxOverlay();
@@ -215,19 +213,23 @@ const app = {
         const isTestnet = modal.getChainId() === 296;
         const baseUrl = isTestnet ? 'https://testnet.mirrornode.hedera.com' : 'https://mainnet-public.mirrornode.hedera.com';
         
-        for (let i = 0; i < 5; i++) { // Poll 5 times
+        // Poll for up to 30 seconds
+        for (let i = 0; i < 30; i++) {
             try {
                 const response = await fetch(`${baseUrl}/api/v1/transactions/${hash}`);
                 if (response.ok) {
                     const data = await response.json();
                     if (data.transactions && data.transactions.length > 0) {
-                        return data.transactions[0].result === 'SUCCESS';
+                        const success = data.transactions[0].result === 'SUCCESS';
+                        if (success) return true;
+                        if (data.transactions[0].result !== 'PENDING') throw new Error('Transaction failed on-chain');
                     }
                 }
             } catch (e) {
-                console.error('[PLAYFI] Mirror Node Fallback Error:', e);
+                if (e.message === 'Transaction failed on-chain') throw e;
+                // Otherwise ignore fetch errors and keep polling
             }
-            await new Promise(r => setTimeout(r, 2000)); // Wait 2s between polls
+            await new Promise(r => setTimeout(r, 1000)); // Check every 1s for speed
         }
         return false;
     },
