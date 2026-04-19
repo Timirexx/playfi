@@ -1,7 +1,7 @@
 import { createAppKit } from '@reown/appkit'
 import { WagmiAdapter } from '@reown/appkit-adapter-wagmi'
 import { hedera, hederaTestnet } from '@reown/appkit/networks'
-import { getBalance, sendTransaction, waitForTransactionReceipt } from '@wagmi/core'
+import { getAccount, getBalance, sendTransaction, waitForTransactionReceipt } from '@wagmi/core'
 import { parseEther } from 'viem'
 
 const projectId = '1543435671e63ff12e86f80deed48dae'
@@ -44,6 +44,23 @@ const app = {
         isProcessingBet: false,
         lastBalanceFetch: 0,
         refreshInterval: null
+    },
+
+    getSafeChainId() {
+        try {
+            // 1. Bulletproof Wagmi State
+            const acc = getAccount(wagmiAdapter.wagmiConfig);
+            if (acc && acc.chainId) return acc.chainId;
+            
+            // 2. AppKit fallback (safe wrapped)
+            if (typeof modal.getChainId === 'function') {
+                const raw = modal.getChainId();
+                if (raw) return typeof raw === 'string' && raw.includes(':') ? Number(raw.split(':')[1]) : Number(raw);
+            }
+        } catch (e) {
+            console.warn('[PLAYFI] Network detection fallback:', e);
+        }
+        return 296; // Safe default
     },
 
     init() {
@@ -113,13 +130,8 @@ const app = {
         console.log('[PLAYFI] Connection detected for:', this.state.walletAddress);
 
         try {
-            // First, determine network to get the correct Mirror Node
-            const rawChainId = modal.getChainId();
-            const chainId = (typeof rawChainId === 'string' && rawChainId.includes(':')) 
-                ? Number(rawChainId.split(':')[1]) 
-                : Number(rawChainId);
-            
-            // DEFAULT TO TESTNET if chainId is missing or 296
+            // First, determine network to get the correct Mirror Node safely
+            const chainId = this.getSafeChainId();
             const isTestnet = !chainId || chainId === 296 || chainId === Number(hederaTestnet.id);
             const baseUrl = isTestnet ? 'https://testnet.mirrornode.hedera.com' : 'https://mainnet-public.mirrornode.hedera.com';
 
@@ -175,13 +187,8 @@ const app = {
         const balanceEl = document.getElementById('user-balance');
         const refreshBtn = document.getElementById('refresh-balance-btn');
         
-        // Normalize chainId (AppKit can return strings or numbers)
-        const rawChainId = modal.getChainId();
-        const chainId = (typeof rawChainId === 'string' && rawChainId.includes(':')) 
-            ? Number(rawChainId.split(':')[1]) 
-            : Number(rawChainId);
-            
-        // DEFAULT TO TESTNET if chainId is 0, NaN, or 296
+        // Safe chainId retrieval
+        const chainId = this.getSafeChainId();
         const isTestnet = !chainId || chainId === 296 || chainId === Number(hederaTestnet.id);
         const networkName = isTestnet ? ' HBAR (Testnet)' : ' HBAR (Mainnet)';
         
@@ -332,8 +339,9 @@ const app = {
      * Checks if the transaction has reached consensus even if the RPC relay is lagging.
      */
     async verifyTxOnMirrorNode(hash) {
-        // Hedera Testnet/Mainnet Mirror Node check
-        const isTestnet = modal.getChainId() === 296;
+        // Hedera Testnet/Mainnet Mirror Node check safely
+        const chainId = this.getSafeChainId();
+        const isTestnet = !chainId || chainId === 296 || chainId === Number(hederaTestnet.id);
         const baseUrl = isTestnet ? 'https://testnet.mirrornode.hedera.com' : 'https://mainnet-public.mirrornode.hedera.com';
         
         // Poll for up to 30 seconds
