@@ -192,6 +192,25 @@ h1, h2, h3, h4, .brand-text {
     font-weight: 700;
     color: var(--neon-blue);
     font-variant-numeric: tabular-nums;
+    transition: color 0.3s ease;
+}
+
+.balance-update-up {
+    color: #00ff88 !important;
+    text-shadow: 0 0 10px rgba(0, 255, 136, 0.4);
+    animation: balance-bounce 0.8s ease;
+}
+
+.balance-update-down {
+    color: #ff3366 !important;
+    text-shadow: 0 0 10px rgba(255, 51, 102, 0.4);
+    animation: balance-bounce 0.8s ease;
+}
+
+@keyframes balance-bounce {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.08); }
+    100% { transform: scale(1); }
 }
 
 .currency-label {

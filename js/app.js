@@ -38,9 +38,12 @@ const app = {
         isConnected: false,
         walletAddress: null,
         balance: '0.00',
+        lastBalance: 0,
         username: 'Guest',
         winRate: '0%',
-        isProcessingBet: false
+        isProcessingBet: false,
+        lastBalanceFetch: 0,
+        refreshInterval: null
     },
 
     init() {
@@ -100,86 +103,166 @@ const app = {
     async handleConnect(address) {
         if (!address) return;
         this.state.isConnected = true;
-        this.state.walletAddress = address;
+        this.state.walletAddress = address.toLowerCase();
         
         // Show truncated 0x address initially
         this.state.username = `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
         this.state.balance = 'Loading...';
         this.updateUI();
 
-        // 1. Fetch Hedera Native ID (0.0.x) for better user identity
+        console.log('[PLAYFI] Connection detected for:', this.state.walletAddress);
+
+        // 1. Fetch Hedera Native ID (0.0.x) and initial balance
+        const rawChainId = modal.getChainId();
+        const chainId = typeof rawChainId === 'string' && rawChainId.includes(':') 
+            ? Number(rawChainId.split(':')[1]) 
+            : Number(rawChainId);
+        const isTestnet = chainId === 296 || chainId === Number(hederaTestnet.id);
+        const baseUrl = isTestnet ? 'https://testnet.mirrornode.hedera.com' : 'https://mainnet-public.mirrornode.hedera.com';
+
         try {
-            const response = await fetch(`https://testnet.mirrornode.hedera.com/api/v1/accounts/${address}`);
+            const response = await fetch(`${baseUrl}/api/v1/accounts/${this.state.walletAddress}`);
             const data = await response.json();
+            
             if (data && data.account) {
-                console.log('[PLAYFI] Hedera Native ID found:', data.account);
+                console.log('[PLAYFI] Hedera Account found:', data.account);
                 this.state.username = data.account; // Format: 0.0.xxxx
+                
+                // Immediately set balance if available in this call
+                if (data.balance && typeof data.balance.balance === 'number') {
+                    const hbarBalance = data.balance.balance / 100_000_000;
+                    const networkName = isTestnet ? ' (Testnet)' : ' (Mainnet)';
+                    this.state.balance = hbarBalance.toFixed(2) + networkName;
+                }
                 this.updateUI();
             }
         } catch (err) {
-            console.error('[PLAYFI] Mirror Node Error:', err);
+            console.error('[PLAYFI] handleConnect Mirror Node Error:', err);
         }
 
         await this.refreshBalance();
+        this.startAutoRefresh();
+    },
+
+    startAutoRefresh() {
+        this.stopAutoRefresh();
+        this.state.refreshInterval = setInterval(() => {
+            // Only refresh if tab is active to save bandwidth
+            if (document.visibilityState === 'visible') {
+                this.refreshBalance(false);
+            }
+        }, 15000); // 15s interval
+    },
+
+    stopAutoRefresh() {
+        if (this.state.refreshInterval) {
+            clearInterval(this.state.refreshInterval);
+            this.state.refreshInterval = null;
+        }
     },
 
     async refreshBalance(isManual = false) {
         if (!this.state.walletAddress || !this.state.isConnected) return;
         
+        const now = Date.now();
+        // Cache: Don't fetch more than once every 5 seconds unless manual
+        if (!isManual && now - this.state.lastBalanceFetch < 5000) return;
+
         const balanceEl = document.getElementById('user-balance');
         const refreshBtn = document.getElementById('refresh-balance-btn');
-        const chainId = modal.getChainId();
-        const isTestnet = chainId === 296;
         
-        if (isManual || balanceEl.innerText === 'Loading...') {
+        const rawChainId = modal.getChainId();
+        const chainId = typeof rawChainId === 'string' && rawChainId.includes(':') 
+            ? Number(rawChainId.split(':')[1]) 
+            : Number(rawChainId);
+            
+        const isTestnet = chainId === 296 || chainId === Number(hederaTestnet.id);
+        const networkName = isTestnet ? ' (Testnet)' : ' (Mainnet)';
+        
+        if (isManual || this.state.balance === 'Loading...') {
             if (refreshBtn) refreshBtn.classList.add('is-refreshing');
-            if (!isManual) this.state.balance = 'Loading...';
             this.updateUI();
         }
 
         try {
-            // 1. PRIMARY: Fetch from Hedera Mirror Node (Native & most reliable)
             const baseUrl = isTestnet ? 'https://testnet.mirrornode.hedera.com' : 'https://mainnet-public.mirrornode.hedera.com';
-            const response = await fetch(`${baseUrl}/api/v1/accounts/${this.state.walletAddress}`);
+            const queryParam = this.state.username.startsWith('0.0.') ? this.state.username : this.state.walletAddress;
+            const response = await fetch(`${baseUrl}/api/v1/accounts/${queryParam}`);
             
             if (response.ok) {
                 const data = await response.json();
-                if (data && data.balance) {
+                if (data && data.balance && typeof data.balance.balance === 'number') {
                     const hbarBalance = data.balance.balance / 100_000_000;
-                    const networkName = isTestnet ? ' (Testnet)' : '';
-                    this.state.balance = hbarBalance.toFixed(2) + networkName;
-                    this.state.balanceError = false;
-                    this.updateUI();
+                    this.state.lastBalanceFetch = Date.now();
                     
+                    if (parseFloat(this.state.balance) !== hbarBalance) {
+                        this.animateBalance(hbarBalance, isTestnet);
+                    } else {
+                        this.state.balance = hbarBalance.toFixed(2) + networkName;
+                        this.updateUI();
+                    }
+                    
+                    this.state.balanceError = false;
                     if (refreshBtn) {
                         setTimeout(() => refreshBtn.classList.remove('is-refreshing'), 500);
                     }
-                    return; // Success!
+                    return; 
                 }
             }
 
-            // 2. FALLBACK: Fetch from Wagmi/EVM RPC Relay
-            console.warn('[PLAYFI] Mirror Node failed, trying Wagmi fallback...');
+            // Fallback
             const balanceData = await getBalance(wagmiAdapter.wagmiConfig, {
                 address: this.state.walletAddress,
                 chainId: chainId
             });
             
             const rawBalance = parseFloat(balanceData.formatted);
-            const networkName = isTestnet ? ' (Testnet)' : '';
             this.state.balance = (isNaN(rawBalance) ? '0.00' : rawBalance.toFixed(2)) + networkName;
             this.state.balanceError = false;
         } catch (error) {
-            console.error('[PLAYFI] All balance fetch methods failed:', error);
-            this.state.balance = '---';
+            console.error('[PLAYFI] Balance fetch error:', error);
             this.state.balanceError = true;
-            if (isManual) this.showToast('Unable to fetch balance', 'error');
         } finally {
             if (refreshBtn) {
                 setTimeout(() => refreshBtn.classList.remove('is-refreshing'), 500);
             }
             this.updateUI();
         }
+    },
+
+    animateBalance(newVal, isTestnet) {
+        const balanceEl = document.getElementById('user-balance');
+        if (!balanceEl) return;
+
+        const startVal = this.state.lastBalance || parseFloat(this.state.balance) || 0;
+        const duration = 800;
+        const startTime = performance.now();
+        const networkName = isTestnet ? ' (Testnet)' : ' (Mainnet)';
+
+        // Animation class
+        const animClass = newVal > startVal ? 'balance-update-up' : 'balance-update-down';
+        balanceEl.classList.add(animClass);
+
+        const update = (currentTime) => {
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            
+            // Easing function (outQuart)
+            const easedProgress = 1 - Math.pow(1 - progress, 4);
+            const currentBalance = startVal + (newVal - startVal) * easedProgress;
+            
+            this.state.balance = currentBalance.toFixed(2) + networkName;
+            balanceEl.innerText = this.state.balance;
+
+            if (progress < 1) {
+                requestAnimationFrame(update);
+            } else {
+                this.state.lastBalance = newVal;
+                setTimeout(() => balanceEl.classList.remove(animClass), 1000);
+            }
+        };
+
+        requestAnimationFrame(update);
     },
 
     /**
@@ -280,6 +363,7 @@ const app = {
         this.state.isConnected = false;
         this.state.walletAddress = null;
         this.state.balance = '0.00';
+        this.stopAutoRefresh();
         this.updateUI();
     },
 
