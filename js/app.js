@@ -112,27 +112,31 @@ const app = {
 
         console.log('[PLAYFI] Connection detected for:', this.state.walletAddress);
 
-        // 1. Fetch Hedera Native ID (0.0.x) and initial balance
-        const rawChainId = modal.getChainId();
-        const chainId = typeof rawChainId === 'string' && rawChainId.includes(':') 
-            ? Number(rawChainId.split(':')[1]) 
-            : Number(rawChainId);
-        const isTestnet = chainId === 296 || chainId === Number(hederaTestnet.id);
-        const baseUrl = isTestnet ? 'https://testnet.mirrornode.hedera.com' : 'https://mainnet-public.mirrornode.hedera.com';
-
         try {
+            // First, determine network to get the correct Mirror Node
+            const rawChainId = modal.getChainId();
+            const chainId = (typeof rawChainId === 'string' && rawChainId.includes(':')) 
+                ? Number(rawChainId.split(':')[1]) 
+                : Number(rawChainId);
+            
+            // DEFAULT TO TESTNET if chainId is missing or 296
+            const isTestnet = !chainId || chainId === 296 || chainId === Number(hederaTestnet.id);
+            const baseUrl = isTestnet ? 'https://testnet.mirrornode.hedera.com' : 'https://mainnet-public.mirrornode.hedera.com';
+
+            console.log(`[PLAYFI] Fetching account details from ${isTestnet ? 'Testnet' : 'Mainnet'}...`);
+            
             const response = await fetch(`${baseUrl}/api/v1/accounts/${this.state.walletAddress}`);
             const data = await response.json();
             
             if (data && data.account) {
-                console.log('[PLAYFI] Hedera Account found:', data.account);
-                this.state.username = data.account; // Format: 0.0.xxxx
+                console.log('[PLAYFI] Hedera Native ID found:', data.account);
+                this.state.username = data.account; // Store 0.0.xxxx
                 
-                // Immediately set balance if available in this call
                 if (data.balance && typeof data.balance.balance === 'number') {
                     const hbarBalance = data.balance.balance / 100_000_000;
                     const networkName = isTestnet ? ' (Testnet)' : ' (Mainnet)';
                     this.state.balance = hbarBalance.toFixed(2) + networkName;
+                    this.state.lastBalance = hbarBalance;
                 }
                 this.updateUI();
             }
@@ -171,12 +175,14 @@ const app = {
         const balanceEl = document.getElementById('user-balance');
         const refreshBtn = document.getElementById('refresh-balance-btn');
         
+        // Normalize chainId (AppKit can return strings or numbers)
         const rawChainId = modal.getChainId();
-        const chainId = typeof rawChainId === 'string' && rawChainId.includes(':') 
+        const chainId = (typeof rawChainId === 'string' && rawChainId.includes(':')) 
             ? Number(rawChainId.split(':')[1]) 
             : Number(rawChainId);
             
-        const isTestnet = chainId === 296 || chainId === Number(hederaTestnet.id);
+        // DEFAULT TO TESTNET if chainId is 0, NaN, or 296
+        const isTestnet = !chainId || chainId === 296 || chainId === Number(hederaTestnet.id);
         const networkName = isTestnet ? ' (Testnet)' : ' (Mainnet)';
         
         if (isManual || this.state.balance === 'Loading...') {
@@ -186,7 +192,12 @@ const app = {
 
         try {
             const baseUrl = isTestnet ? 'https://testnet.mirrornode.hedera.com' : 'https://mainnet-public.mirrornode.hedera.com';
-            const queryParam = this.state.username.startsWith('0.0.') ? this.state.username : this.state.walletAddress;
+            
+            // Prioritize Account ID (0.0.x)
+            const queryParam = (this.state.username && this.state.username.startsWith('0.0.')) 
+                ? this.state.username 
+                : this.state.walletAddress;
+                
             const response = await fetch(`${baseUrl}/api/v1/accounts/${queryParam}`);
             
             if (response.ok) {
@@ -203,6 +214,7 @@ const app = {
                     }
                     
                     this.state.balanceError = false;
+                    console.log(`[PLAYFI] Balance synced via Native ID (${queryParam}):`, hbarBalance);
                     if (refreshBtn) {
                         setTimeout(() => refreshBtn.classList.remove('is-refreshing'), 500);
                     }
