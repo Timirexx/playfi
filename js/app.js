@@ -6,8 +6,8 @@ import { parseEther } from 'viem'
 
 const projectId = '1543435671e63ff12e86f80deed48dae'
 
-// Placeholder House Address (Update this in production!)
-const HOUSE_ADDRESS = '0x486455D4eA30666060002f23824594A58737526f'
+// Official House Address for Hedera Testnet
+const HOUSE_ADDRESS = '0x874cd1a4a234272a69b449422b668ce0c9bb2c57'
 
 const wagmiAdapter = new WagmiAdapter({
   projectId,
