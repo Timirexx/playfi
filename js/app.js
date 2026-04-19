@@ -134,7 +134,7 @@ const app = {
                 
                 if (data.balance && typeof data.balance.balance === 'number') {
                     const hbarBalance = data.balance.balance / 100_000_000;
-                    const networkName = isTestnet ? ' (Testnet)' : ' (Mainnet)';
+                    const networkName = isTestnet ? ' HBAR (Testnet)' : ' HBAR (Mainnet)';
                     this.state.balance = hbarBalance.toFixed(2) + networkName;
                     this.state.lastBalance = hbarBalance;
                 }
@@ -155,7 +155,7 @@ const app = {
             if (document.visibilityState === 'visible') {
                 this.refreshBalance(false);
             }
-        }, 15000); // 15s interval
+        }, 10000); // 10s auto-refresh interval
     },
 
     stopAutoRefresh() {
@@ -183,7 +183,7 @@ const app = {
             
         // DEFAULT TO TESTNET if chainId is 0, NaN, or 296
         const isTestnet = !chainId || chainId === 296 || chainId === Number(hederaTestnet.id);
-        const networkName = isTestnet ? ' (Testnet)' : ' (Mainnet)';
+        const networkName = isTestnet ? ' HBAR (Testnet)' : ' HBAR (Mainnet)';
         
         if (isManual || this.state.balance === 'Loading...') {
             if (refreshBtn) refreshBtn.classList.add('is-refreshing');
@@ -233,7 +233,9 @@ const app = {
             this.state.balanceError = false;
         } catch (error) {
             console.error('[PLAYFI] Balance fetch error:', error);
+            this.state.balance = 'Unable to fetch balance';
             this.state.balanceError = true;
+            if (isManual) this.showToast('Failed to sync balance. Click 🔄 to retry.', 'error');
         } finally {
             if (refreshBtn) {
                 setTimeout(() => refreshBtn.classList.remove('is-refreshing'), 500);
