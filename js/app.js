@@ -1,6 +1,6 @@
 import { createAppKit } from '@reown/appkit'
 import { WagmiAdapter } from '@reown/appkit-adapter-wagmi'
-import { hedera, hederaTestnet } from '@reown/appkit/networks'
+import { hederaTestnet } from '@reown/appkit/networks'
 import { getAccount, getBalance, sendTransaction, waitForTransactionReceipt } from '@wagmi/core'
 import { parseEther } from 'viem'
 
@@ -11,12 +11,12 @@ const HOUSE_ADDRESS = '0x874cd1a4a234272a69b449422b668ce0c9bb2c57'
 
 const wagmiAdapter = new WagmiAdapter({
   projectId,
-  networks: [hedera, hederaTestnet]
+  networks: [hederaTestnet]
 })
 
 const modal = createAppKit({
   adapters: [wagmiAdapter],
-  networks: [hedera, hederaTestnet],
+  networks: [hederaTestnet],
   projectId,
   metadata: {
     name: 'PLAYFI',
