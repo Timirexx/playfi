@@ -128,6 +128,8 @@ const app = {
         
         const balanceEl = document.getElementById('user-balance');
         const refreshBtn = document.getElementById('refresh-balance-btn');
+        const chainId = modal.getChainId();
+        const isTestnet = chainId === 296;
         
         if (isManual || balanceEl.innerText === 'Loading...') {
             if (refreshBtn) refreshBtn.classList.add('is-refreshing');
@@ -136,18 +138,39 @@ const app = {
         }
 
         try {
-            const chainId = modal.getChainId();
+            // 1. PRIMARY: Fetch from Hedera Mirror Node (Native & most reliable)
+            const baseUrl = isTestnet ? 'https://testnet.mirrornode.hedera.com' : 'https://mainnet-public.mirrornode.hedera.com';
+            const response = await fetch(`${baseUrl}/api/v1/accounts/${this.state.walletAddress}`);
+            
+            if (response.ok) {
+                const data = await response.json();
+                if (data && data.balance) {
+                    const hbarBalance = data.balance.balance / 100_000_000;
+                    const networkName = isTestnet ? ' (Testnet)' : '';
+                    this.state.balance = hbarBalance.toFixed(2) + networkName;
+                    this.state.balanceError = false;
+                    this.updateUI();
+                    
+                    if (refreshBtn) {
+                        setTimeout(() => refreshBtn.classList.remove('is-refreshing'), 500);
+                    }
+                    return; // Success!
+                }
+            }
+
+            // 2. FALLBACK: Fetch from Wagmi/EVM RPC Relay
+            console.warn('[PLAYFI] Mirror Node failed, trying Wagmi fallback...');
             const balanceData = await getBalance(wagmiAdapter.wagmiConfig, {
                 address: this.state.walletAddress,
                 chainId: chainId
             });
             
             const rawBalance = parseFloat(balanceData.formatted);
-            const networkName = chainId === 296 ? ' (Testnet)' : '';
+            const networkName = isTestnet ? ' (Testnet)' : '';
             this.state.balance = (isNaN(rawBalance) ? '0.00' : rawBalance.toFixed(2)) + networkName;
             this.state.balanceError = false;
         } catch (error) {
-            console.error('[PLAYFI] Balance Error:', error);
+            console.error('[PLAYFI] All balance fetch methods failed:', error);
             this.state.balance = '---';
             this.state.balanceError = true;
             if (isManual) this.showToast('Unable to fetch balance', 'error');
