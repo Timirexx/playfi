@@ -66,7 +66,6 @@ const app = {
 
     init() {
         console.log('[PLAYFI] App initializing...');
-        initWallet(); // Start HashConnect initialization
         
         modal.subscribeAccount((account) => {
             if (account.isConnected && account.address) {
@@ -116,7 +115,8 @@ const app = {
     },
 
     openWalletModal() {
-        connectWallet(); // Trigger HashConnect pairing modal
+        // Now handled via DOM listeners in wallet.js
+        console.log('[PLAYFI] Modal trigger redirected to HashConnect logic');
     },
 
     async handleConnect(address) {
