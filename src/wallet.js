@@ -1,41 +1,116 @@
-import { HashConnect } from "hashconnect";
-import { LedgerId } from "@hashgraph/sdk";
+import { ethers } from "ethers";
 
-// WalletConnect Project ID - Required for v4
-const PROJECT_ID = "f55a7c9d55d65684c9f36147172d9a2e";
-
-const projectMetadata = {
-    name: "PLAYFI",
-    description: "Hedera Play-to-Earn Arcade",
-    icons: ["https://cryptologos.cc/logos/hedera-hbar-logo.svg"],
-    url: window.location.origin
-};
-
-// Export raw HashConnect instance so app.js can manage global state events
-export const hashconnect = new HashConnect(
-    LedgerId.TESTNET,
-    PROJECT_ID,
-    projectMetadata,
-    true // debug mode
-);
+export let provider = null;
+export let signer = null;
 
 export const connectWallet = async () => {
-    console.log("[HashConnect] Triggering pairing modal...");
+    console.log("[EVM] Triggering MetaMask connection...");
+    
+    if (typeof window.ethereum === 'undefined') {
+        alert("MetaMask (or a Web3 wallet) is not installed! Please install it to connect.");
+        return null;
+    }
+
     try {
-        await hashconnect.openPairingModal();
+        // Request account access
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        
+        // Ensure we are on Hedera Testnet (Chain ID 296 / 0x128)
+        await switchToHederaTestnet();
+
+        provider = new ethers.BrowserProvider(window.ethereum);
+        signer = await provider.getSigner();
+        
+        const address = accounts[0];
+        console.log("[EVM] Connected to:", address);
+        
+        // Dispatch custom global event so app.js can catch it synchronously
+        window.dispatchEvent(new CustomEvent('evm_wallet_connected', { detail: { address } }));
+        return address;
     } catch (error) {
-        console.error("Pairing Error:", error);
+        console.error("[EVM] Connection Failed:", error);
+        return null;
+    }
+};
+
+const switchToHederaTestnet = async () => {
+    try {
+        await window.ethereum.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: '0x128' }], // 296 in hex
+        });
+    } catch (error) {
+        // This error code indicates that the chain has not been added to MetaMask.
+        if (error.code === 4902) {
+            try {
+                await window.ethereum.request({
+                    method: 'wallet_addEthereumChain',
+                    params: [
+                        {
+                            chainId: '0x128', // 296
+                            chainName: 'Hedera Testnet',
+                            nativeCurrency: {
+                                name: 'HBAR',
+                                symbol: 'HBAR', // 2-6 characters long
+                                decimals: 18
+                            },
+                            rpcUrls: ['https://testnet.hashio.io/api'],
+                            blockExplorerUrls: ['https://hashscan.io/testnet/']
+                        },
+                    ],
+                });
+            } catch (addError) {
+                console.error("[EVM] Failed to add Hedera Network", addError);
+            }
+        }
     }
 };
 
 export const initWallet = async () => {
-    console.log("[HashConnect] Initializing SDK...");
-    try {
-        await hashconnect.init();
-        console.log("[HashConnect] SDK Ready.");
+    console.log("[EVM] Initializing Wallet Listener...");
+    
+    const connectBtns = document.querySelectorAll('#connect-btn, .lock-overlay .btn');
+    
+    if (typeof window.ethereum !== 'undefined') {
+        // Restore button state
+        connectBtns.forEach(btn => {
+            btn.disabled = false;
+            btn.innerText = "Connect Wallet";
+        });
+
+        // Listen for account changes
+        window.ethereum.on('accountsChanged', (accounts) => {
+            if (accounts.length > 0) {
+                window.dispatchEvent(new CustomEvent('evm_wallet_connected', { detail: { address: accounts[0] } }));
+            } else {
+                window.dispatchEvent(new CustomEvent('evm_wallet_disconnected'));
+            }
+        });
+
+        // Listen for chain changes
+        window.ethereum.on('chainChanged', () => {
+            window.location.reload();
+        });
+        
+        // Auto-connect if already authorized
+        try {
+            const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+            if (accounts.length > 0) {
+                provider = new ethers.BrowserProvider(window.ethereum);
+                signer = await provider.getSigner();
+                window.dispatchEvent(new CustomEvent('evm_wallet_connected', { detail: { address: accounts[0] } }));
+            }
+        } catch(e) {
+            console.error(e);
+        }
+
         return true;
-    } catch (error) {
-        console.error("[HashConnect] Init Failed:", error);
+    } else {
+        console.warn("[EVM] No Web3 provider detected.");
+        connectBtns.forEach(btn => {
+            btn.innerText = "Get MetaMask";
+            btn.onclick = () => window.open('https://metamask.io/download/', '_blank');
+        });
         return false;
     }
 };

@@ -1,4 +1,5 @@
-import { initWallet, connectWallet, hashconnect } from '../src/wallet.js'
+import { initWallet, connectWallet, signer } from '../src/wallet.js'
+import { ethers } from 'ethers';
 
 // Official House Address for Hedera Testnet
 const HOUSE_ADDRESS = '0x874cd1a4a234272a69b449422b668ce0c9bb2c57'
@@ -24,40 +25,24 @@ const app = {
     async init() {
         console.log('[PLAYFI] App initializing...');
         
-        // 1. Setup HashConnect Listeners (Single Source of Truth)
-        hashconnect.pairingEvent.on((msg) => {
-            console.log("[HashConnect] Pairing Resolved", msg);
-            if (msg.pairingData) {
-                const accountId = msg.pairingData.accountIds[0];
-                const evmAddress = msg.pairingData.accounts[0].evmAddress || accountId;
-                
-                // Immediately set natived ID and trigger connect logic
-                this.state.username = accountId; 
-                this.handleConnect(evmAddress);
-            }
+        // 1. Setup EVM Listeners
+        window.addEventListener('evm_wallet_connected', (e) => {
+            const evmAddress = e.detail.address;
+            console.log("[PLAYFI] Caught EVM connection event:", evmAddress);
+            // Default username format immediately
+            this.state.username = `${evmAddress.substring(0, 6)}...${evmAddress.substring(evmAddress.length - 4)}`;
+            this.handleConnect(evmAddress);
         });
 
-        hashconnect.disconnectionEvent.on((msg) => {
-            console.log("[HashConnect] Wallet Disconnected");
+        window.addEventListener('evm_wallet_disconnected', () => {
+            console.log("[PLAYFI] Caught EVM disconnect event");
             this.handleDisconnect();
         });
 
-        // 2. Button Loading State
-        const connectBtns = document.querySelectorAll('#connect-btn, .lock-overlay .btn');
-        connectBtns.forEach(btn => {
-            btn.disabled = true;
-            btn.innerText = "Loading SDK...";
-        });
-
-        // 3. Initialize HashConnect
+        // 2. Initialize EVM Wallet Script
         const isSDKReady = await initWallet();
         
-        connectBtns.forEach(btn => {
-            btn.disabled = !isSDKReady;
-            btn.innerText = isSDKReady ? "Connect Wallet" : "SDK Error";
-        });
-        
-        // 4. Hook up the UI refresh button
+        // 3. Hook up the UI refresh button
         const refreshBtn = document.getElementById('refresh-balance-btn');
         if (refreshBtn) {
             refreshBtn.addEventListener('click', (e) => {
@@ -100,21 +85,11 @@ const app = {
         this.state.isConnected = true;
         this.state.walletAddress = address.toLowerCase();
         
-        // Show truncated 0x address initially if not already set to a native Hedera ID
-        if (this.state.username === 'Guest' || !this.state.username.startsWith('0.0.')) {
-            this.state.username = `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
-        }
-        this.state.balance = 'Loading...';
-        this.updateUI();
-
         console.log('[PLAYFI] Connection detected for:', this.state.walletAddress);
-
+        
         try {
-            // Network is firmly locked to Hedera Testnet
-            const isTestnet = true;
             const baseUrl = 'https://testnet.mirrornode.hedera.com';
-
-            console.log(`[PLAYFI] Fetching account details from Testnet...`);
+            console.log(`[PLAYFI] Fetching Hedera Native ID via Mirror Node...`);
             
             const response = await fetch(`${baseUrl}/api/v1/accounts/${this.state.walletAddress}`);
             const data = await response.json();
@@ -267,9 +242,16 @@ const app = {
         this.showTxOverlay('Action Required', 'Please confirm the bet in your wallet...');
         
         try {
-            // TODO: Construct Hedera TransferTransaction via HashConnect
-            console.log('[PLAYFI] Simulated bet of', amount, 'HBAR');
-            await new Promise(r => setTimeout(r, 1500));
+            if (!signer) throw new Error("Wallet not connected");
+            
+            // Send HBAR transaction via EVM natively
+            const tx = await signer.sendTransaction({
+                to: HOUSE_ADDRESS,
+                value: ethers.parseEther(amount.toString())
+            });
+            
+            this.showTxOverlay('Transaction Pending', 'Waiting for Hedera network confirmation...');
+            await tx.wait();
             
             this.hideTxOverlay();
             this.showToast('Bet confirmed! Good luck!', 'success');
@@ -279,7 +261,10 @@ const app = {
         } catch (error) {
             console.error('[PLAYFI] Bet Transaction Error:', error);
             this.hideTxOverlay();
-            this.showToast('Transaction failed', 'error');
+            
+            const msg = error.shortMessage || error.message || 'Transaction failed or rejected';
+            this.showToast(msg, 'error');
+            
             this.state.isProcessingBet = false;
             return false;
         }
