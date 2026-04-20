@@ -23,6 +23,7 @@
         </div>
         <div class="nav-links">
             <button class="nav-btn active" onclick="app.navigate('home')">Hub</button>
+            <button class="nav-btn" onclick="app.navigate('vault')">DeFi Vault</button>
             <button class="nav-btn" onclick="app.navigate('rewards')">Daily Rewards</button>
             <button class="nav-btn" onclick="app.navigate('leaderboard')">Leaderboard</button>
         </div>
@@ -235,6 +236,46 @@
             </div>
         </section>
 
+        <!-- DEFI VAULT VIEW -->
+        <section id="view-vault" class="view hidden">
+            <button class="btn btn-glow" onclick="app.navigate('home')" style="margin-bottom: 2rem;">&larr; Back to Hub</button>
+            <div class="hero-section">
+                <div class="hero-header">
+                    <h2 class="neon-text outline-text text-center" style="width: 100%;">STAKING VAULT</h2>
+                </div>
+                
+                <div class="crash-container">
+                    <div class="glass-panel text-center" style="padding: 2rem; border-radius: 12px; margin-bottom: 2rem; width: 100%; max-width: 400px; margin: 0 auto 2rem auto;">
+                        <h4 style="color: var(--text-muted); margin-bottom: 0.5rem;">Total Value Locked (TVL)</h4>
+                        <div style="font-size: 3rem; font-weight: 900; color: var(--neon-blue); text-shadow: 0 0 20px rgba(0, 240, 255, 0.5);">
+                            <span id="vault-tvl">0.00</span> <span style="font-size: 1.5rem;">HBAR</span>
+                        </div>
+                    </div>
+                    
+                    <div class="crash-controls glass-panel" style="width: 100%; max-width: 600px; margin: 0 auto; display: flex; flex-direction: column; gap: 2rem;">
+                        
+                        <div class="vault-stats" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 1rem;">
+                            <span style="font-size: 1.2rem; color: var(--text-muted);">Your Staked Balance:</span>
+                            <span style="font-size: 1.5rem; font-weight: bold; color: white;"><span id="vault-staked">0.00</span> HBAR</span>
+                        </div>
+
+                        <div class="bet-input-group">
+                            <label>Deposit Amount (HBAR)</label>
+                            <div class="input-wrapper">
+                                <input type="number" id="vault-deposit-input" value="100" min="1">
+                                <span class="input-currency">HBAR</span>
+                            </div>
+                        </div>
+                        
+                        <div style="display: flex; gap: 1rem;">
+                            <button id="vault-deposit-btn" class="btn btn-hero btn-glow" style="flex: 1;" onclick="vaultSystem.deposit(document.getElementById('vault-deposit-input').value)">Stake HBAR</button>
+                            <button id="vault-withdraw-btn" class="btn btn-hero" style="flex: 1; background: transparent; border: 1px solid var(--danger); box-shadow: none; text-shadow: none;" onclick="vaultSystem.withdraw()">Withdraw All</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <!-- GAMES PLACEHOLDER VIEWS -->
         <section id="view-placeholder" class="view hidden">
             <button class="btn btn-glow" onclick="app.navigate('home')" style="margin-bottom: 2rem;">&larr; Back to Hub</button>
@@ -263,5 +304,6 @@
     <script type="module" src="/js/games/crash.js"></script>
     <script type="module" src="/js/games/mines.js"></script>
     <script type="module" src="/js/games/spin.js"></script>
+    <script type="module" src="/js/vault.js"></script>
 </body>
 </html>

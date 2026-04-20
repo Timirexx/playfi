@@ -111,11 +111,16 @@ const app = {
                 
                 if (data.balance && typeof data.balance.balance === 'number') {
                     const hbarBalance = data.balance.balance / 100_000_000;
-                    const networkName = isTestnet ? ' HBAR (Testnet)' : ' HBAR (Mainnet)';
+                    const networkName = ' HBAR (Testnet)';
                     this.state.balance = hbarBalance.toFixed(2) + networkName;
                     this.state.lastBalance = hbarBalance;
                 }
                 this.updateUI();
+                
+                // Fetch Vault stats if user is connected
+                if (window.vaultSystem) {
+                    window.vaultSystem.fetchStats(this.state.walletAddress);
+                }
             }
         } catch (err) {
             console.error('[PLAYFI] handleConnect Mirror Node Error:', err);
