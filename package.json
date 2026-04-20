@@ -14,17 +14,11 @@
   "license": "ISC",
   "dependencies": {
     "@hashgraph/sdk": "^2.81.0",
-    "@reown/appkit": "^1.8.19",
-    "@reown/appkit-adapter-wagmi": "^1.8.19",
-    "@tanstack/query-core": "^5.99.2",
-    "@wagmi/core": "^3.4.4",
     "dotenv": "^17.4.2",
     "hashconnect": "^3.0.14",
     "ox": "^0.14.18",
     "solc": "^0.8.20",
-    "viem": "^2.48.1",
-    "vite": "^8.0.8",
-    "wagmi": "^3.6.3"
+    "vite": "^8.0.8"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-ethers": "^4.0.8",

@@ -1,37 +1,7 @@
-import { createAppKit } from '@reown/appkit'
-import { WagmiAdapter } from '@reown/appkit-adapter-wagmi'
-import { hederaTestnet } from '@reown/appkit/networks'
-import { getAccount, getBalance, sendTransaction, waitForTransactionReceipt } from '@wagmi/core'
-import { parseEther } from 'viem'
 import { initWallet, connectWallet, hashconnect } from '../src/wallet.js'
-
-const projectId = '1543435671e63ff12e86f80deed48dae'
 
 // Official House Address for Hedera Testnet
 const HOUSE_ADDRESS = '0x874cd1a4a234272a69b449422b668ce0c9bb2c57'
-
-const wagmiAdapter = new WagmiAdapter({
-  projectId,
-  networks: [hederaTestnet]
-})
-
-const modal = createAppKit({
-  adapters: [wagmiAdapter],
-  networks: [hederaTestnet],
-  projectId,
-  metadata: {
-    name: 'PLAYFI',
-    description: 'Hedera Play-to-Earn Arcade',
-    url: 'https://playfi-kohl.vercel.app',
-    icons: ['https://cryptologos.cc/logos/hedera-hbar-logo.svg']
-  },
-  themeMode: 'dark',
-  themeVariables: {
-    '--w3m-accent': '#00f0ff',
-    '--w3m-color-mix': '#00f0ff',
-    '--w3m-color-mix-strength': 15
-  }
-})
 
 const app = {
     state: {
@@ -48,20 +18,7 @@ const app = {
     },
 
     getSafeChainId() {
-        try {
-            // 1. Bulletproof Wagmi State
-            const acc = getAccount(wagmiAdapter.wagmiConfig);
-            if (acc && acc.chainId) return acc.chainId;
-            
-            // 2. AppKit fallback (safe wrapped)
-            if (typeof modal.getChainId === 'function') {
-                const raw = modal.getChainId();
-                if (raw) return typeof raw === 'string' && raw.includes(':') ? Number(raw.split(':')[1]) : Number(raw);
-            }
-        } catch (e) {
-            console.warn('[PLAYFI] Network detection fallback:', e);
-        }
-        return 296; // Safe default
+        return 296; // Hedera Testnet
     },
 
     async init() {
@@ -100,15 +57,7 @@ const app = {
             btn.innerText = isSDKReady ? "Connect Wallet" : "SDK Error";
         });
         
-        // 4. AppKit Fallback Listeners
-        modal.subscribeAccount((account) => {
-            if (account.isConnected && account.address && !this.state.isConnected) {
-                this.handleConnect(account.address);
-            } else if (!account.isConnected && this.state.isConnected && !hashconnect.hcData?.pairingData) {
-                this.handleDisconnect();
-            }
-        });
-
+        // 4. Hook up the UI refresh button
         const refreshBtn = document.getElementById('refresh-balance-btn');
         if (refreshBtn) {
             refreshBtn.addEventListener('click', (e) => {
@@ -116,13 +65,6 @@ const app = {
                 this.refreshBalance(true);
             });
         }
-
-        setTimeout(() => {
-            const acc = modal.getAccount();
-            if (acc && acc.isConnected && acc.address && !this.state.isConnected) {
-                this.handleConnect(acc.address);
-            }
-        }, 1000);
     },
 
     navigate(viewId) {
@@ -168,12 +110,11 @@ const app = {
         console.log('[PLAYFI] Connection detected for:', this.state.walletAddress);
 
         try {
-            // First, determine network to get the correct Mirror Node safely
-            const chainId = this.getSafeChainId();
-            const isTestnet = !chainId || chainId === 296 || chainId === Number(hederaTestnet.id);
-            const baseUrl = isTestnet ? 'https://testnet.mirrornode.hedera.com' : 'https://mainnet-public.mirrornode.hedera.com';
+            // Network is firmly locked to Hedera Testnet
+            const isTestnet = true;
+            const baseUrl = 'https://testnet.mirrornode.hedera.com';
 
-            console.log(`[PLAYFI] Fetching account details from ${isTestnet ? 'Testnet' : 'Mainnet'}...`);
+            console.log(`[PLAYFI] Fetching account details from Testnet...`);
             
             const response = await fetch(`${baseUrl}/api/v1/accounts/${this.state.walletAddress}`);
             const data = await response.json();
@@ -225,10 +166,9 @@ const app = {
         const balanceEl = document.getElementById('user-balance');
         const refreshBtn = document.getElementById('refresh-balance-btn');
         
-        // Safe chainId retrieval
-        const chainId = this.getSafeChainId();
-        const isTestnet = !chainId || chainId === 296 || chainId === Number(hederaTestnet.id);
-        const networkName = isTestnet ? ' HBAR (Testnet)' : ' HBAR (Mainnet)';
+        // Safe network
+        const isTestnet = true;
+        const networkName = ' HBAR (Testnet)';
         
         if (isManual || this.state.balance === 'Loading...') {
             if (refreshBtn) refreshBtn.classList.add('is-refreshing');
@@ -236,7 +176,7 @@ const app = {
         }
 
         try {
-            const baseUrl = isTestnet ? 'https://testnet.mirrornode.hedera.com' : 'https://mainnet-public.mirrornode.hedera.com';
+            const baseUrl = 'https://testnet.mirrornode.hedera.com';
             
             // Prioritize Account ID (0.0.x)
             const queryParam = (this.state.username && this.state.username.startsWith('0.0.')) 
@@ -265,17 +205,9 @@ const app = {
                     }
                     return; 
                 }
+            } else {
+                throw new Error('Mirror node returned error status');
             }
-
-            // Fallback
-            const balanceData = await getBalance(wagmiAdapter.wagmiConfig, {
-                address: this.state.walletAddress,
-                chainId: chainId
-            });
-            
-            const rawBalance = parseFloat(balanceData.formatted);
-            this.state.balance = (isNaN(rawBalance) ? '0.00' : rawBalance.toFixed(2)) + networkName;
-            this.state.balanceError = false;
         } catch (error) {
             console.error('[PLAYFI] Balance fetch error:', error);
             this.state.balance = 'Unable to fetch balance';
@@ -335,25 +267,9 @@ const app = {
         this.showTxOverlay('Action Required', 'Please confirm the bet in your wallet...');
         
         try {
-            // 1. Send HBAR to House Address
-            const hash = await sendTransaction(wagmiAdapter.wagmiConfig, {
-                to: HOUSE_ADDRESS,
-                value: parseEther(amount.toString()),
-            });
-            
-            this.showTxOverlay('Transaction Pending', 'Waiting for Hedera network confirmation...');
-            
-            // 2. Wait for confirmation - OPTIMIZED: Race the RPC relay vs Mirror Node
-            // This starts the mirror node check IMMEDIATELY instead of waiting for a timeout.
-            try {
-                await Promise.race([
-                    waitForTransactionReceipt(wagmiAdapter.wagmiConfig, { hash }),
-                    this.verifyTxOnMirrorNode(hash)
-                ]);
-            } catch (waitError) {
-                console.warn('[PLAYFI] Primary wait failing, continuing if mirror node eventually succeeds...', waitError);
-                // The race might fail if one side rejects, but we only need ONE to succeed.
-            }
+            // TODO: Construct Hedera TransferTransaction via HashConnect
+            console.log('[PLAYFI] Simulated bet of', amount, 'HBAR');
+            await new Promise(r => setTimeout(r, 1500));
             
             this.hideTxOverlay();
             this.showToast('Bet confirmed! Good luck!', 'success');
@@ -363,44 +279,10 @@ const app = {
         } catch (error) {
             console.error('[PLAYFI] Bet Transaction Error:', error);
             this.hideTxOverlay();
-            
-            const msg = error.shortMessage || error.message || 'Transaction failed or rejected';
-            this.showToast(msg, 'error');
-            
+            this.showToast('Transaction failed', 'error');
             this.state.isProcessingBet = false;
             return false;
         }
-    },
-
-    /**
-     * MIRROR NODE FALLBACK
-     * Checks if the transaction has reached consensus even if the RPC relay is lagging.
-     */
-    async verifyTxOnMirrorNode(hash) {
-        // Hedera Testnet/Mainnet Mirror Node check safely
-        const chainId = this.getSafeChainId();
-        const isTestnet = !chainId || chainId === 296 || chainId === Number(hederaTestnet.id);
-        const baseUrl = isTestnet ? 'https://testnet.mirrornode.hedera.com' : 'https://mainnet-public.mirrornode.hedera.com';
-        
-        // Poll for up to 30 seconds
-        for (let i = 0; i < 30; i++) {
-            try {
-                const response = await fetch(`${baseUrl}/api/v1/transactions/${hash}`);
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.transactions && data.transactions.length > 0) {
-                        const success = data.transactions[0].result === 'SUCCESS';
-                        if (success) return true;
-                        if (data.transactions[0].result !== 'PENDING') throw new Error('Transaction failed on-chain');
-                    }
-                }
-            } catch (e) {
-                if (e.message === 'Transaction failed on-chain') throw e;
-                // Otherwise ignore fetch errors and keep polling
-            }
-            await new Promise(r => setTimeout(r, 1000)); // Check every 1s for speed
-        }
-        return false;
     },
 
     showTxOverlay(title, desc) {
