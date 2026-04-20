@@ -3,7 +3,7 @@ import { WagmiAdapter } from '@reown/appkit-adapter-wagmi'
 import { hederaTestnet } from '@reown/appkit/networks'
 import { getAccount, getBalance, sendTransaction, waitForTransactionReceipt } from '@wagmi/core'
 import { parseEther } from 'viem'
-import { initWallet, connectWallet } from '../src/wallet.js'
+import { initWallet, connectWallet, hashconnect } from '../src/wallet.js'
 
 const projectId = '1543435671e63ff12e86f80deed48dae'
 
@@ -64,13 +64,47 @@ const app = {
         return 296; // Safe default
     },
 
-    init() {
+    async init() {
         console.log('[PLAYFI] App initializing...');
         
+        // 1. Setup HashConnect Listeners (Single Source of Truth)
+        hashconnect.pairingEvent.on((msg) => {
+            console.log("[HashConnect] Pairing Resolved", msg);
+            if (msg.pairingData) {
+                const accountId = msg.pairingData.accountIds[0];
+                const evmAddress = msg.pairingData.accounts[0].evmAddress || accountId;
+                
+                // Immediately set natived ID and trigger connect logic
+                this.state.username = accountId; 
+                this.handleConnect(evmAddress);
+            }
+        });
+
+        hashconnect.disconnectionEvent.on((msg) => {
+            console.log("[HashConnect] Wallet Disconnected");
+            this.handleDisconnect();
+        });
+
+        // 2. Button Loading State
+        const connectBtns = document.querySelectorAll('#connect-btn, .lock-overlay .btn');
+        connectBtns.forEach(btn => {
+            btn.disabled = true;
+            btn.innerText = "Loading SDK...";
+        });
+
+        // 3. Initialize HashConnect
+        const isSDKReady = await initWallet();
+        
+        connectBtns.forEach(btn => {
+            btn.disabled = !isSDKReady;
+            btn.innerText = isSDKReady ? "Connect Wallet" : "SDK Error";
+        });
+        
+        // 4. AppKit Fallback Listeners
         modal.subscribeAccount((account) => {
-            if (account.isConnected && account.address) {
+            if (account.isConnected && account.address && !this.state.isConnected) {
                 this.handleConnect(account.address);
-            } else if (!account.isConnected) {
+            } else if (!account.isConnected && this.state.isConnected && !hashconnect.hcData?.pairingData) {
                 this.handleDisconnect();
             }
         });
@@ -85,7 +119,7 @@ const app = {
 
         setTimeout(() => {
             const acc = modal.getAccount();
-            if (acc && acc.isConnected && acc.address) {
+            if (acc && acc.isConnected && acc.address && !this.state.isConnected) {
                 this.handleConnect(acc.address);
             }
         }, 1000);
@@ -115,8 +149,8 @@ const app = {
     },
 
     openWalletModal() {
-        // Now handled via DOM listeners in wallet.js
-        console.log('[PLAYFI] Modal trigger redirected to HashConnect logic');
+        console.log('[PLAYFI] Wallet connection triggered');
+        connectWallet(); 
     },
 
     async handleConnect(address) {
@@ -124,8 +158,10 @@ const app = {
         this.state.isConnected = true;
         this.state.walletAddress = address.toLowerCase();
         
-        // Show truncated 0x address initially
-        this.state.username = `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+        // Show truncated 0x address initially if not already set to a native Hedera ID
+        if (this.state.username === 'Guest' || !this.state.username.startsWith('0.0.')) {
+            this.state.username = `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+        }
         this.state.balance = 'Loading...';
         this.updateUI();
 
