@@ -1,5 +1,6 @@
-import { initWallet, connectWallet, signer } from '../src/wallet.js'
-import { ethers } from 'ethers';
+import { initWallet, connectWallet, modal, wagmiAdapter } from '../src/wallet.js'
+import { sendTransaction, waitForTransactionReceipt } from '@wagmi/core'
+import { parseEther } from 'viem'
 
 // Official House Address for Hedera Testnet
 const HOUSE_ADDRESS = '0x874cd1a4a234272a69b449422b668ce0c9bb2c57'
