@@ -1,4 +1,5 @@
 import { defineConfig } from 'vite';
+import { nodePolyfills } from 'vite-plugin-node-polyfills';
 
 export default defineConfig({
   root: './',
@@ -10,4 +11,13 @@ export default defineConfig({
   server: {
     port: 3000,
   },
+  plugins: [
+    nodePolyfills({
+      globals: {
+        Buffer: true,
+        global: true,
+        process: true,
+      },
+    }),
+  ],
 });

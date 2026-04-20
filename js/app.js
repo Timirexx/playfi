@@ -3,6 +3,7 @@ import { WagmiAdapter } from '@reown/appkit-adapter-wagmi'
 import { hederaTestnet } from '@reown/appkit/networks'
 import { getAccount, getBalance, sendTransaction, waitForTransactionReceipt } from '@wagmi/core'
 import { parseEther } from 'viem'
+import { initWallet, connectWallet } from '../src/wallet.js'
 
 const projectId = '1543435671e63ff12e86f80deed48dae'
 
@@ -65,6 +66,7 @@ const app = {
 
     init() {
         console.log('[PLAYFI] App initializing...');
+        initWallet(); // Start HashConnect initialization
         
         modal.subscribeAccount((account) => {
             if (account.isConnected && account.address) {
@@ -114,7 +116,7 @@ const app = {
     },
 
     openWalletModal() {
-        modal.open();
+        connectWallet(); // Trigger HashConnect pairing modal
     },
 
     async handleConnect(address) {
