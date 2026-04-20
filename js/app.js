@@ -242,16 +242,15 @@ const app = {
         this.showTxOverlay('Action Required', 'Please confirm the bet in your wallet...');
         
         try {
-            if (!signer) throw new Error("Wallet not connected");
-            
-            // Send HBAR transaction via EVM natively
-            const tx = await signer.sendTransaction({
+            // Send HBAR via Reown
+            const hash = await sendTransaction(wagmiAdapter.wagmiConfig, {
                 to: HOUSE_ADDRESS,
-                value: ethers.parseEther(amount.toString())
+                value: parseEther(amount.toString())
             });
             
             this.showTxOverlay('Transaction Pending', 'Waiting for Hedera network confirmation...');
-            await tx.wait();
+            
+            await waitForTransactionReceipt(wagmiAdapter.wagmiConfig, { hash });
             
             this.hideTxOverlay();
             this.showToast('Bet confirmed! Good luck!', 'success');
