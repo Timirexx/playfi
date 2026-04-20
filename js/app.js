@@ -1,5 +1,5 @@
 import { initWallet, connectWallet, modal, wagmiAdapter } from '../src/wallet.js'
-import { sendTransaction, waitForTransactionReceipt } from '@wagmi/core'
+import { getAccount, sendTransaction, waitForTransactionReceipt } from '@wagmi/core'
 import { parseEther } from 'viem'
 
 // Official House Address for Hedera Testnet
@@ -26,21 +26,31 @@ const app = {
     async init() {
         console.log('[PLAYFI] App initializing...');
         
-        // 1. Setup EVM Listeners
-        window.addEventListener('evm_wallet_connected', (e) => {
-            const evmAddress = e.detail.address;
-            console.log("[PLAYFI] Caught EVM connection event:", evmAddress);
-            // Default username format immediately
-            this.state.username = `${evmAddress.substring(0, 6)}...${evmAddress.substring(evmAddress.length - 4)}`;
-            this.handleConnect(evmAddress);
+        // 1. Setup Reown AppKit Listeners
+        modal.subscribeAccount((account) => {
+            if (account.isConnected && account.address && !this.state.isConnected) {
+                console.log("[PLAYFI] Reown Account Connected:", account.address);
+                this.state.username = `${account.address.substring(0, 6)}...${account.address.substring(account.address.length - 4)}`;
+                this.handleConnect(account.address);
+            } else if (!account.isConnected && this.state.isConnected) {
+                console.log("[PLAYFI] Reown Account Disconnected");
+                this.handleDisconnect();
+            }
         });
 
-        window.addEventListener('evm_wallet_disconnected', () => {
-            console.log("[PLAYFI] Caught EVM disconnect event");
-            this.handleDisconnect();
-        });
+        // Initial State Check
+        setTimeout(() => {
+            try {
+                const acc = getAccount(wagmiAdapter.wagmiConfig);
+                if (acc && acc.isConnected && acc.address && !this.state.isConnected) {
+                    console.log("[PLAYFI] Picked up initial Reown state.");
+                    this.state.username = `${acc.address.substring(0, 6)}...${acc.address.substring(acc.address.length - 4)}`;
+                    this.handleConnect(acc.address);
+                }
+            } catch(e) {}
+        }, 1000);
 
-        // 2. Initialize EVM Wallet Script
+        // 2. Initialize AppKit Wrapper
         const isSDKReady = await initWallet();
         
         // 3. Hook up the UI refresh button
