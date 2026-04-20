@@ -2,7 +2,7 @@ import { HashConnect } from "hashconnect";
 import { LedgerId } from "@hashgraph/sdk";
 
 // WalletConnect Project ID - Required for v4
-const PROJECT_ID = "1543435671e63ff12e86f80deed48dae";
+const PROJECT_ID = "f55a7c9d55d65684c9f36147172d9a2e";
 
 const projectMetadata = {
     name: "PLAYFI",
