@@ -15,9 +15,10 @@ contract PlayFiVault is Ownable {
     address private constant HTS_PRECOMPILE = address(0x167);
     IERC20 public playToken;
     
-    // Reward rate: 1 HBAR locked for 1 second generates 11574074074074 wei of PLAY
-    // This equals exactly 1 PLAY token per 24 hours per HBAR staked.
-    uint256 public rewardRatePerSecond = 11574074074074; 
+    // Reward rate for 8-decimal PLAY token:
+    // 1 PLAY token = 100,000,000 units. 
+    // 100,000,000 / 86400 seconds = 1157.407...
+    uint256 public rewardRatePerSecond = 1157; 
     
     struct Stake {
         uint256 amount;

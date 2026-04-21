@@ -1,12 +1,42 @@
 export const PLAY_TOKEN_ID = '0.0.8726991';
 export const PLAY_TOKEN_ADDRESS = '0x00000000000000000000000000000000008529cf';
-export const PLAYFI_VAULT_ADDRESS = '0xE5DDAEB09b1ee6cBeE7F465fCB28C916Bc26f0Ad';
+export const PLAYFI_VAULT_ADDRESS = '0xb07CDe97639d73D071cD51D0C10B9De2C3130A21';
 
 export const PLAY_TOKEN_ABI = [
-  'function balanceOf(address) view returns (uint256)',
-  'function transfer(address to, uint256 amount) returns (bool)',
-  'function decimals() view returns (uint8)',
-  'function approve(address spender, uint256 amount) returns (bool)'
+  {
+    "inputs": [{"internalType": "address", "name": "account", "type": "address"}],
+    "name": "balanceOf",
+    "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {"internalType": "address", "name": "to", "type": "address"},
+      {"internalType": "uint256", "name": "amount", "type": "uint256"}
+    ],
+    "name": "transfer",
+    "outputs": [{"internalType": "bool", "name": "", "type": "bool"}],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "decimals",
+    "outputs": [{"internalType": "uint8", "name": "", "type": "uint8"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {"internalType": "address", "name": "spender", "type": "address"},
+      {"internalType": "uint256", "name": "amount", "type": "uint256"}
+    ],
+    "name": "approve",
+    "outputs": [{"internalType": "bool", "name": "", "type": "bool"}],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
 ];
 
 export const PLAYFI_VAULT_ABI = [
