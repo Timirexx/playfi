@@ -14,7 +14,6 @@ export const vault = {
         timeHeld: '0 Days',
         isAssociated: true,
         isProcessing: false,
-        tickInterval: null,
         lastFetchTime: 0
     },
 
@@ -68,17 +67,16 @@ export const vault = {
                 this.state.tierMult = '1.0x';
             }
 
-            // Fetch Earned PLAY Yield (PLAY is 8 decimals)
+            // Fetch PlayFi Points (HTS token + Transaction Bonus)
             const yieldRaw = await readContract(wagmiAdapter.wagmiConfig, {
                 address: PLAYFI_VAULT_ADDRESS,
                 abi: PLAYFI_VAULT_ABI,
                 functionName: 'calculateYield',
                 args: [userAddress]
             });
-            this.state.earnedPlay = parseFloat(formatUnits(yieldRaw, 8)).toFixed(5);
+            this.state.earnedPlay = parseFloat(formatUnits(yieldRaw, 8)).toFixed(2);
             this.state.lastFetchTime = Date.now();
-            // Real-time ticking disabled as per user request to avoid "slow" feeling
-            // this.startVisualTick();
+            // Dynamism: Every fetch provides a fresh snapshot of your growing points balance.
 
             // Fetch Wallet PLAY Token Balance 
             try {
@@ -111,8 +109,7 @@ export const vault = {
     async associate() {
         if (this.state.isProcessing) return;
         this.state.isProcessing = true;
-
-        if (window.app) window.app.showTxOverlay('Activating Token', 'Please associate the PLAY token in your wallet...');
+        if (window.app) window.app.showTxOverlay('Activating System', 'Enabling PlayFi Points system in your wallet...');
 
         try {
             // Hedera HTS Precompile at 0x167
@@ -135,7 +132,7 @@ export const vault = {
             this.fetchStats(window.app.state.walletAddress);
             if (window.app) {
                 window.app.hideTxOverlay();
-                window.app.showToast('PLAY Token Activated!', 'success');
+                window.app.showToast('Points System Activated!', 'success');
             }
         } catch (error) {
             console.error('[VAULT] Association Error:', error);
@@ -156,8 +153,7 @@ export const vault = {
         }
         if (this.state.isProcessing || parseFloat(this.state.earnedPlay) <= 0) return;
         this.state.isProcessing = true;
-        
-        if (window.app) window.app.showTxOverlay('Claiming Yield', 'Please confirm in your wallet...');
+        if (window.app) window.app.showTxOverlay('Claiming Points', 'Collecting your generated PlayFi Points...');
 
         try {
             const hash = await writeContract(wagmiAdapter.wagmiConfig, {
@@ -172,7 +168,7 @@ export const vault = {
             
             if (window.app) {
                 window.app.hideTxOverlay();
-                window.app.showToast('Successfully claimed PLAY tokens!', 'success');
+                window.app.showToast('Points claimed successfully!', 'success');
                 this.fetchStats(window.app.state.walletAddress);
                 window.app.updateUI();
             }
@@ -208,7 +204,7 @@ export const vault = {
             
             if (window.app) {
                 window.app.hideTxOverlay();
-                window.app.showToast('Successfully staked HBAR!', 'success');
+                window.app.showToast('Successfully staked HBAR & Earned Bonus Points!', 'success');
                 window.app.refreshBalance(true);
                 this.fetchStats(window.app.state.walletAddress);
             }
@@ -243,7 +239,7 @@ export const vault = {
             
             if (window.app) {
                 window.app.hideTxOverlay();
-                window.app.showToast('Successfully withdrawn HBAR & Yield!', 'success');
+                window.app.showToast('Withdrawn HBAR & Final Points!', 'success');
                 window.app.refreshBalance(true);
                 this.fetchStats(window.app.state.walletAddress);
             }

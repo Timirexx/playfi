@@ -38,7 +38,7 @@ async function main() {
         "function decimals() public view returns (uint8)"
     ];
     const playToken = new ethers.Contract(tokenAddress, minERC20Abi, wallet);
-    const fiftyPercentSupply = ethers.parseUnits("5000000", 8); // HTS token created with 8 decimals
+    const fiftyPercentSupply = ethers.parseUnits("1000000", 8); // HTS token created with 8 decimals
     
     const transferTx = await playToken.transfer(vaultAddress, fiftyPercentSupply);
     await transferTx.wait();

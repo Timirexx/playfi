@@ -25,6 +25,7 @@ contract PlayFiVault is Ownable {
         uint256 amount;
         uint256 lastClaimTimestamp;
         uint256 firstDepositTimestamp; // Tracks when capital was locked
+        uint256 bonusPoints; // Points generated from transactions (one-time rewards)
     }
 
     mapping(address => Stake) public stakes;
@@ -66,8 +67,8 @@ contract PlayFiVault is Ownable {
             dynamicRate = (dynamicRate * 120) / 100; // Silver:  1.2x after 3 days
         }
         
-        // reward = (amount_staked / 1 ether) * timeStaked * dynamicRate
-        uint256 reward = (userStake.amount * timeStaked * dynamicRate) / 1 ether;
+        // reward = bonusPoints + (amount_staked / 1 ether) * timeStaked * dynamicRate
+        uint256 reward = userStake.bonusPoints + ((userStake.amount * timeStaked * dynamicRate) / 1 ether);
         return reward;
     }
 
@@ -78,6 +79,7 @@ contract PlayFiVault is Ownable {
 
         // Reentrancy and time-tracking reset FIRST
         stakes[msg.sender].lastClaimTimestamp = block.timestamp;
+        stakes[msg.sender].bonusPoints = 0; // Clear action bonuses after claim
         
         // Send the minted play tokens from the vault's reserve to the user
         require(playToken.balanceOf(address(this)) >= pendingYield, "Vault has insufficient PLAY reserve");
@@ -96,10 +98,16 @@ contract PlayFiVault is Ownable {
             if(pendingYield > 0 && playToken.balanceOf(address(this)) >= pendingYield) {
                // Safely distribute yield inline
                stakes[msg.sender].lastClaimTimestamp = block.timestamp;
+               stakes[msg.sender].bonusPoints = 0; 
                emit YieldClaimed(msg.sender, pendingYield);
                playToken.transfer(msg.sender, pendingYield);
             }
         }
+        
+        // Add one-time staking bonus: 100 points per 1 HBAR deposited
+        // Hedera tinybar is 8 decimals, PLAY token is 8 decimals. 1:100 ratio
+        uint256 transactionBonus = msg.value * 100;
+        stakes[msg.sender].bonusPoints += transactionBonus;
 
         // Apply Capital-Weighted Time Averaging formula for returning users
         if (stakes[msg.sender].amount == 0) {
@@ -130,7 +138,8 @@ contract PlayFiVault is Ownable {
 
         stakes[msg.sender].amount = 0;
         stakes[msg.sender].lastClaimTimestamp = 0;
-        stakes[msg.sender].firstDepositTimestamp = 0; // Hard reset time tracking
+        stakes[msg.sender].firstDepositTimestamp = 0; 
+        stakes[msg.sender].bonusPoints = 0; // Reset all rewards on full withdrawal
         totalValueLocked -= amount;
 
         emit Withdrawn(msg.sender, amount);

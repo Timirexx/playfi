@@ -41,9 +41,9 @@
                     </button>
                 </div>
                 <div class="stat-pill play-pill" style="border-color: #f7b733; color: #f7b733; box-shadow: 0 0 10px rgba(247, 183, 51, 0.2);">
-                    <span style="font-weight: 800; font-size:1.1rem; margin-right: 5px;">🕹️</span>
+                    <span style="font-weight: 800; font-size:1.1rem; margin-right: 5px;">⭐</span>
                     <span id="wallet-play-balance" style="font-weight: 700;">0.00</span>
-                    <span class="currency-label">PLAY</span>
+                    <span class="currency-label">Points</span>
                 </div>
             </div>
             <button id="connect-btn" class="btn btn-glow" onclick="app.openWalletModal()">Connect Wallet</button>
@@ -278,11 +278,11 @@
                         </div>
 
                         <div class="vault-stats" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 1rem;">
-                            <span style="font-size: 1.2rem; color: #f7b733;">Passive Yield Earned:</span>
+                            <span style="font-size: 1.2rem; color: #f7b733;">PlayFi Points Earned:</span>
                             <div style="display: flex; align-items: center; gap: 1rem;">
-                                <button id="vault-associate-btn" class="btn btn-glow hidden" style="background: var(--neon-blue); border-color: var(--neon-blue); color: white; padding: 0.5rem 1rem;" onclick="vaultSystem.associate()">Activate PLAY Token</button>
-                                <span style="font-size: 1.5rem; font-weight: bold; color: #f7b733;"><span id="vault-earned-play">0.00</span> PLAY</span>
-                                <button class="btn btn-glow" style="background: rgba(247, 183, 51, 0.2); border-color: #f7b733; color: #f7b733; padding: 0.5rem 1rem;" onclick="vaultSystem.claimYield()">Claim</button>
+                                <button id="vault-associate-btn" class="btn btn-glow hidden" style="background: var(--neon-blue); border-color: var(--neon-blue); color: white; padding: 0.5rem 1rem;" onclick="vaultSystem.associate()">Activate Points System</button>
+                                <span style="font-size: 1.5rem; font-weight: bold; color: #f7b733;"><span id="vault-earned-play">0.00</span> Points</span>
+                                <button class="btn btn-glow" style="background: rgba(247, 183, 51, 0.2); border-color: #f7b733; color: #f7b733; padding: 0.5rem 1rem;" onclick="vaultSystem.claimYield()">Claim Points</button>
                             </div>
                         </div>
 
