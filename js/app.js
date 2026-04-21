@@ -1,6 +1,6 @@
 import { initWallet, connectWallet, modal, wagmiAdapter } from '../src/wallet.js'
 import { getAccount, sendTransaction, writeContract, waitForTransactionReceipt } from '@wagmi/core'
-import { parseEther } from 'viem'
+import { parseUnits } from 'viem'
 import { PLAY_TOKEN_ADDRESS, PLAY_TOKEN_ABI } from '../src/contracts/PlayFiVault.js'
 
 // Official House Address for Hedera Testnet
@@ -248,23 +248,26 @@ const app = {
         requestAnimationFrame(update);
     },
 
-    /**
-     * PROCESS ON-CHAIN BET
-     * This prompts the user to send HBAR to the house address before starting the game.
-     */
     async processBet(amount) {
         if (!this.state.isConnected || this.state.isProcessingBet) return false;
         
+        // Ensure user has enough PLAY tokens before requesting transaction
+        const currentPlayBalance = parseFloat(this.state.playBalance || "0");
+        if (amount > currentPlayBalance) {
+            this.showToast('Insufficient PLAY tokens! Stake HBAR in Vault to earn more.', 'error');
+            return false;
+        }
+
         this.state.isProcessingBet = true;
         this.showTxOverlay('Action Required', 'Please confirm the bet in your wallet...');
         
         try {
-            // Send PLAY token wager to house
+            // Send PLAY token wager to house (Native HTS tokens use 8 decimals)
             const hash = await writeContract(wagmiAdapter.wagmiConfig, {
                 address: PLAY_TOKEN_ADDRESS,
                 abi: PLAY_TOKEN_ABI,
                 functionName: 'transfer',
-                args: [HOUSE_ADDRESS, parseEther(amount.toString())]
+                args: [HOUSE_ADDRESS, parseUnits(amount.toString(), 8)]
             });
             
             this.showTxOverlay('Transaction Pending', 'Waiting for Hedera network confirmation...');
