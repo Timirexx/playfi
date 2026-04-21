@@ -124,7 +124,8 @@ export const vault = {
                 address: HTS_PRECOMPILE,
                 abi: abi,
                 functionName: 'associateToken',
-                args: [window.app.state.walletAddress, PLAY_TOKEN_ADDRESS]
+                args: [window.app.state.walletAddress, PLAY_TOKEN_ADDRESS],
+                gas: 800000n // Bypass gas estimation
             });
 
             if (window.app) window.app.showTxOverlay('Transaction Pending', 'Finalizing association...');
@@ -162,7 +163,8 @@ export const vault = {
             const hash = await writeContract(wagmiAdapter.wagmiConfig, {
                 address: PLAYFI_VAULT_ADDRESS,
                 abi: PLAYFI_VAULT_ABI,
-                functionName: 'claimYield'
+                functionName: 'claimYield',
+                gas: 800000n // Bypass gas estimation
             });
 
             if (window.app) window.app.showTxOverlay('Transaction Pending', 'Waiting for confirmation...');
@@ -196,7 +198,8 @@ export const vault = {
                 address: PLAYFI_VAULT_ADDRESS,
                 abi: PLAYFI_VAULT_ABI,
                 functionName: 'deposit',
-                value: parseUnits(amount.toString(), 8)
+                value: parseEther(amount.toString()), // Return to 18-decimal for EVM RPC compatibility
+                gas: 800000n // Bypass gas estimation
             });
 
             if (window.app) window.app.showTxOverlay('Transaction Pending', 'Waiting for Hedera confirmation...');
@@ -230,7 +233,8 @@ export const vault = {
             const hash = await writeContract(wagmiAdapter.wagmiConfig, {
                 address: PLAYFI_VAULT_ADDRESS,
                 abi: PLAYFI_VAULT_ABI,
-                functionName: 'withdraw'
+                functionName: 'withdraw',
+                gas: 800000n // Bypass gas estimation
             });
 
             if (window.app) window.app.showTxOverlay('Transaction Pending', 'Waiting for Hedera confirmation...');
