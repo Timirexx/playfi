@@ -219,11 +219,50 @@ export const vault = {
         }
     },
 
-    async withdraw() {
+    async withdraw(amount) {
+        if (this.state.isProcessing || !amount || amount <= 0) return;
+        if (parseFloat(amount) > parseFloat(this.state.stakedBalance)) {
+            if (window.app) window.app.showToast('Amount exceeds staked balance', 'error');
+            return;
+        }
+        this.state.isProcessing = true;
+        
+        if (window.app) window.app.showTxOverlay('Partial Withdrawal', `Withdrawing ${amount} HBAR and claiming points...`);
+
+        try {
+            const hash = await writeContract(wagmiAdapter.wagmiConfig, {
+                address: PLAYFI_VAULT_ADDRESS,
+                abi: PLAYFI_VAULT_ABI,
+                functionName: 'withdrawAmount',
+                args: [parseEther(amount.toString())],
+                gas: 800000n // Bypass gas estimation
+            });
+
+            if (window.app) window.app.showTxOverlay('Transaction Pending', 'Finalizing withdrawal...');
+            await waitForTransactionReceipt(wagmiAdapter.wagmiConfig, { hash });
+            
+            if (window.app) {
+                window.app.hideTxOverlay();
+                window.app.showToast('Successfully withdrawn HBAR!', 'success');
+                window.app.refreshBalance(true);
+                this.fetchStats(window.app.state.walletAddress);
+            }
+        } catch (error) {
+            console.error('[VAULT] Partial Withdraw Error:', error);
+            if (window.app) {
+                window.app.hideTxOverlay();
+                window.app.showToast(error.shortMessage || error.message || 'Withdrawal failed', 'error');
+            }
+        } finally {
+            this.state.isProcessing = false;
+        }
+    },
+
+    async withdrawAll() {
         if (this.state.isProcessing || parseFloat(this.state.stakedBalance) <= 0) return;
         this.state.isProcessing = true;
         
-        if (window.app) window.app.showTxOverlay('Vault Unstaking', 'Please confirm the withdrawal in your wallet...');
+        if (window.app) window.app.showTxOverlay('Vault Unstaking', 'Emptying vault and claiming all points...');
 
         try {
             const hash = await writeContract(wagmiAdapter.wagmiConfig, {

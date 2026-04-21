@@ -148,6 +148,39 @@ contract PlayFiVault is Ownable {
         require(success, "Transfer failed");
     }
 
+    function withdrawAmount(uint256 _amount) external {
+        uint256 currentStake = stakes[msg.sender].amount;
+        require(currentStake >= _amount, "Insufficient staked balance");
+        require(_amount > 0, "Amount must be greater than zero");
+
+        // 1. Auto-claim all yield first to ensure calculation integrity for the remaining principal
+        uint256 pendingYield = calculateYield(msg.sender);
+        if(pendingYield > 0 && playToken.balanceOf(address(this)) >= pendingYield) {
+            emit YieldClaimed(msg.sender, pendingYield);
+            playToken.transfer(msg.sender, pendingYield);
+        }
+
+        // 2. Adjust State
+        stakes[msg.sender].amount -= _amount;
+        stakes[msg.sender].lastClaimTimestamp = block.timestamp;
+        stakes[msg.sender].bonusPoints = 0; // Bonuses are claimed above
+        
+        // If they empty their stake, reset timestamps. 
+        // Otherwise, keep firstDepositTimestamp to preserve loyalty tier for the remainder.
+        if (stakes[msg.sender].amount == 0) {
+            stakes[msg.sender].lastClaimTimestamp = 0;
+            stakes[msg.sender].firstDepositTimestamp = 0;
+        }
+
+        totalValueLocked -= _amount;
+
+        emit Withdrawn(msg.sender, _amount);
+
+        // 3. Transfer HBAR
+        (bool success, ) = payable(msg.sender).call{value: _amount}("");
+        require(success, "Withdrawal transfer failed");
+    }
+
     // Returns the exact HBAR balance a user has staked
     function balances(address user) external view returns (uint256) {
         return stakes[user].amount;

@@ -287,16 +287,19 @@
                         </div>
 
                         <div class="bet-input-group">
-                            <label>Deposit Amount (HBAR)</label>
+                            <label>Transaction Amount (HBAR)</label>
                             <div class="input-wrapper">
-                                <input type="number" id="vault-deposit-input" value="100" min="1">
+                                <input type="number" id="vault-amount-input" value="100" min="1">
                                 <span class="input-currency">HBAR</span>
                             </div>
                         </div>
                         
-                        <div style="display: flex; gap: 1rem;">
-                            <button id="vault-deposit-btn" class="btn btn-hero btn-glow" style="flex: 1;" onclick="vaultSystem.deposit(document.getElementById('vault-deposit-input').value)">Stake HBAR</button>
-                            <button id="vault-withdraw-btn" class="btn btn-hero" style="flex: 1; background: transparent; border: 1px solid var(--danger); box-shadow: none; text-shadow: none;" onclick="vaultSystem.withdraw()">Withdraw All</button>
+                        <div style="display: flex; flex-direction: column; gap: 0.8rem;">
+                            <div style="display: flex; gap: 1rem;">
+                                <button id="vault-deposit-btn" class="btn btn-hero btn-glow" style="flex: 1;" onclick="vaultSystem.deposit(document.getElementById('vault-amount-input').value)">Stake HBAR</button>
+                                <button id="vault-withdraw-partial-btn" class="btn btn-hero" style="flex: 1; border: 1px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.05);" onclick="vaultSystem.withdraw(document.getElementById('vault-amount-input').value)">Withdraw</button>
+                            </div>
+                            <button id="vault-withdraw-all-btn" class="btn" style="width: 100%; opacity: 0.7; font-size: 0.9rem;" onclick="vaultSystem.withdrawAll()">Withdraw ALL (Unstake Everything)</button>
                         </div>
                     </div>
                 </div>

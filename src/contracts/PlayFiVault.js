@@ -1,6 +1,6 @@
 export const PLAY_TOKEN_ID = '0.0.8726991';
 export const PLAY_TOKEN_ADDRESS = '0x00000000000000000000000000000000008529cf';
-export const PLAYFI_VAULT_ADDRESS = '0xC1D83137224240BaF91f6De6eB6551dd4D2411F5';
+export const PLAYFI_VAULT_ADDRESS = '0x08323337d100Fa9E96c75621B603B30919acb29d';
 
 export const PLAY_TOKEN_ABI = [
   {
@@ -349,6 +349,19 @@ export const PLAYFI_VAULT_ABI = [
   {
     "inputs": [],
     "name": "withdraw",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "withdrawAmount",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
