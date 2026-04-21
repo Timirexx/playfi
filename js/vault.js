@@ -23,16 +23,16 @@ export const vault = {
                 abi: PLAYFI_VAULT_ABI,
                 functionName: 'totalValueLocked',
             });
-            this.state.tvl = parseFloat(formatUnits(tvlRaw, 18)).toFixed(2);
+            this.state.tvl = parseFloat(formatUnits(tvlRaw, 8)).toFixed(2);
 
-            // Fetch User Staked Balance (HBAR is 18 decimals in EVM)
+            // Fetch User Staked Balance (Hedera EVM uses 8 decimals for HBAR msg.value)
             const balanceRaw = await readContract(wagmiAdapter.wagmiConfig, {
                 address: PLAYFI_VAULT_ADDRESS,
                 abi: PLAYFI_VAULT_ABI,
                 functionName: 'balances',
                 args: [userAddress]
             });
-            this.state.stakedBalance = parseFloat(formatUnits(balanceRaw, 18)).toFixed(2);
+            this.state.stakedBalance = parseFloat(formatUnits(balanceRaw, 8)).toFixed(2);
 
             // Fetch Earned PLAY Yield (PLAY is 8 decimals)
             const yieldRaw = await readContract(wagmiAdapter.wagmiConfig, {
