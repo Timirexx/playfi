@@ -77,7 +77,8 @@ export const vault = {
             });
             this.state.earnedPlay = parseFloat(formatUnits(yieldRaw, 8)).toFixed(5);
             this.state.lastFetchTime = Date.now();
-            this.startVisualTick();
+            // Real-time ticking disabled as per user request to avoid "slow" feeling
+            // this.startVisualTick();
 
             // Fetch Wallet PLAY Token Balance 
             try {
@@ -195,7 +196,7 @@ export const vault = {
                 address: PLAYFI_VAULT_ADDRESS,
                 abi: PLAYFI_VAULT_ABI,
                 functionName: 'deposit',
-                value: parseEther(amount.toString())
+                value: parseUnits(amount.toString(), 8)
             });
 
             if (window.app) window.app.showTxOverlay('Transaction Pending', 'Waiting for Hedera confirmation...');
@@ -293,28 +294,8 @@ export const vault = {
     },
 
     startVisualTick() {
+        // Disabled per user request
         if (this.state.tickInterval) clearInterval(this.state.tickInterval);
-        
-        this.state.tickInterval = setInterval(() => {
-            const staked = parseFloat(this.state.stakedBalance);
-            if (staked <= 0) return;
-            
-            // 1 HBAR generates exactly 100 PLAY per day (base).
-            // 100 PLAY / 86400 seconds = 0.0011574 PLAY per second per HBAR
-            // Per 100ms = 0.00011574 PLAY per HBAR
-            const basePer100ms = 0.00011574;
-            const mult = parseFloat(this.state.tierMult.replace('x', '')) || 1.0;
-            
-            const tickAmount = staked * basePer100ms * mult;
-            const currentEarned = parseFloat(this.state.earnedPlay) || 0;
-            
-            this.state.earnedPlay = (currentEarned + tickAmount).toFixed(5);
-            
-            // Only update the direct UI text to avoid massive DOM re-renders globally
-            const earnedDisplay = document.getElementById('vault-earned-play');
-            if (earnedDisplay) earnedDisplay.innerText = this.state.earnedPlay;
-            
-        }, 100);
     }
 };
 
