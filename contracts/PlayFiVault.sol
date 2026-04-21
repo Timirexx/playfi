@@ -17,9 +17,9 @@ contract PlayFiVault is Ownable {
     
     // Reward rate for 8-decimal PLAY token:
     // 1 PLAY token = 100,000,000 units. 
-    // 1000 PLAY tokens per day = 100,000,000,000 units per day.
-    // Base formula factor = 11,574,074,074,074,074 (accounts for Hedera EVM tinybar msg.value interaction)
-    uint256 public rewardRatePerSecond = 11574074074074074; 
+    // 100 PLAY tokens per day = 10,000,000,000 units per day.
+    // Base formula factor = 1,157,407,407,407,407 (accounts for Hedera EVM tinybar msg.value interaction)
+    uint256 public rewardRatePerSecond = 1157407407407407; 
     
     struct Stake {
         uint256 amount;
