@@ -40,6 +40,11 @@
                         <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
                     </button>
                 </div>
+                <div class="stat-pill play-pill" style="border-color: #f7b733; color: #f7b733; box-shadow: 0 0 10px rgba(247, 183, 51, 0.2);">
+                    <span style="font-weight: 800; font-size:1.1rem; margin-right: 5px;">🕹️</span>
+                    <span id="wallet-play-balance" style="font-weight: 700;">0.00</span>
+                    <span class="currency-label">PLAY</span>
+                </div>
             </div>
             <button id="connect-btn" class="btn btn-glow" onclick="app.openWalletModal()">Connect Wallet</button>
         </div>
@@ -74,10 +79,10 @@
                     <!-- Controls -->
                     <div class="crash-controls glass-panel">
                         <div class="bet-input-group">
-                            <label>Bet Amount (HBAR)</label>
+                            <label>Bet Amount (PLAY)</label>
                             <div class="input-wrapper">
                                 <input type="number" id="crash-bet" value="10" min="1">
-                                <span class="input-currency">HBAR</span>
+                                <span class="input-currency">PLAY</span>
                             </div>
                             <div class="bet-presets">
                                 <button onclick="document.getElementById('crash-bet').value=10">10</button>
@@ -176,10 +181,10 @@
                     
                     <div class="crash-controls glass-panel">
                         <div class="bet-input-group">
-                            <label>Bet Amount (HBAR)</label>
+                            <label>Bet Amount (PLAY)</label>
                             <div class="input-wrapper">
                                 <input type="number" id="mines-bet" value="50" min="1">
-                                <span class="input-currency">HBAR</span>
+                                <span class="input-currency">PLAY</span>
                             </div>
                         </div>
                         <div class="bet-input-group" style="margin-top: 1rem;">
@@ -219,10 +224,10 @@
                     
                     <div class="crash-controls glass-panel">
                         <div class="bet-input-group">
-                            <label>Bet Amount (HBAR)</label>
+                            <label>Bet Amount (PLAY)</label>
                             <div class="input-wrapper">
                                 <input type="number" id="wheel-bet" value="25" min="1">
-                                <span class="input-currency">HBAR</span>
+                                <span class="input-currency">PLAY</span>
                             </div>
                             <div class="bet-presets">
                                 <button onclick="document.getElementById('wheel-bet').value=10">10</button>
@@ -257,6 +262,14 @@
                         <div class="vault-stats" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 1rem;">
                             <span style="font-size: 1.2rem; color: var(--text-muted);">Your Staked Balance:</span>
                             <span style="font-size: 1.5rem; font-weight: bold; color: white;"><span id="vault-staked">0.00</span> HBAR</span>
+                        </div>
+
+                        <div class="vault-stats" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 1rem;">
+                            <span style="font-size: 1.2rem; color: #f7b733;">Passive Yield Earned:</span>
+                            <div style="display: flex; align-items: center; gap: 1rem;">
+                                <span style="font-size: 1.5rem; font-weight: bold; color: #f7b733;"><span id="vault-earned-play">0.00</span> PLAY</span>
+                                <button class="btn btn-glow" style="background: rgba(247, 183, 51, 0.2); border-color: #f7b733; color: #f7b733; padding: 0.5rem 1rem;" onclick="vaultSystem.claimYield()">Claim</button>
+                            </div>
                         </div>
 
                         <div class="bet-input-group">

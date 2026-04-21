@@ -1,6 +1,7 @@
 import { initWallet, connectWallet, modal, wagmiAdapter } from '../src/wallet.js'
-import { getAccount, sendTransaction, waitForTransactionReceipt } from '@wagmi/core'
+import { getAccount, sendTransaction, writeContract, waitForTransactionReceipt } from '@wagmi/core'
 import { parseEther } from 'viem'
+import { PLAY_TOKEN_ADDRESS, PLAY_TOKEN_ABI } from '../src/contracts/PlayFiVault.js'
 
 // Official House Address for Hedera Testnet
 const HOUSE_ADDRESS = '0x874cd1a4a234272a69b449422b668ce0c9bb2c57'
@@ -258,10 +259,12 @@ const app = {
         this.showTxOverlay('Action Required', 'Please confirm the bet in your wallet...');
         
         try {
-            // Send HBAR via Reown
-            const hash = await sendTransaction(wagmiAdapter.wagmiConfig, {
-                to: HOUSE_ADDRESS,
-                value: parseEther(amount.toString())
+            // Send PLAY token wager to house
+            const hash = await writeContract(wagmiAdapter.wagmiConfig, {
+                address: PLAY_TOKEN_ADDRESS,
+                abi: PLAY_TOKEN_ABI,
+                functionName: 'transfer',
+                args: [HOUSE_ADDRESS, parseEther(amount.toString())]
             });
             
             this.showTxOverlay('Transaction Pending', 'Waiting for Hedera network confirmation...');
