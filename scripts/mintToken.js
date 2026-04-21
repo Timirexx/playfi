@@ -10,7 +10,9 @@ if (!process.env.OPERATOR_ID || !process.env.OPERATOR_KEY) {
 }
 
 const operatorId = process.env.OPERATOR_ID;
-const operatorKey = PrivateKey.fromString(process.env.OPERATOR_KEY);
+// Handle cases where the private key might have a 0x prefix
+const cleanKey = process.env.OPERATOR_KEY.startsWith('0x') ? process.env.OPERATOR_KEY.substring(2) : process.env.OPERATOR_KEY;
+const operatorKey = PrivateKey.fromStringECDSA(cleanKey);
 
 // 1. Configure the Hedera Testnet Client
 // This client facilitates all communication with the Hedera network
@@ -30,9 +32,8 @@ async function main() {
             .setDecimals(8)
             .setInitialSupply(10000000) // Initial supply of 10,000,000
             .setTreasuryAccountId(operatorId)
-            // Optional: If you want to mint/burn later, you'd add:
-            // .setSupplyKey(operatorKey)
-            // .setAdminKey(operatorKey)
+            .setSupplyKey(operatorKey)
+            .setAdminKey(operatorKey)
             .freezeWith(client);
 
         // 3. Sign the transaction with the treasury/operator key

@@ -2,8 +2,8 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "C:\\Users\\Tunmise\\.gemini\\antigravity\\scratch\\playfi\\contracts\\PlayFiVault.sol": {
-      "lastModificationDate": 1776779558114,
-      "contentHash": "69d5e732dfbda84268d19dd67adc71c9",
+      "lastModificationDate": 1776782117784,
+      "contentHash": "e4c0f64e7a2ba28a1849a793aaa33b82",
       "sourceName": "contracts/PlayFiVault.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -37,6 +37,7 @@
         "^0.8.20"
       ],
       "artifacts": [
+        "IHederaTokenService",
         "PlayFiVault"
       ]
     },

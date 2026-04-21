@@ -4,7 +4,15 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
+/**
+ * @dev Simple interface for the native Hedera Token Service (HTS) precompile.
+ */
+interface IHederaTokenService {
+    function associateToken(address account, address token) external returns (int32 responseCode);
+}
+
 contract PlayFiVault is Ownable {
+    address private constant HTS_PRECOMPILE = address(0x167);
     IERC20 public playToken;
     
     // Reward rate: 1 HBAR locked for 1 second generates 11574074074074 wei of PLAY
@@ -25,6 +33,13 @@ contract PlayFiVault is Ownable {
 
     constructor(address _playToken) Ownable(msg.sender) {
         playToken = IERC20(_playToken);
+        
+        // Auto-associate the contract with the native HTS token upon deployment
+        (bool success, bytes memory result) = HTS_PRECOMPILE.call(
+            abi.encodeWithSelector(IHederaTokenService.associateToken.selector, address(this), _playToken)
+        );
+        int32 responseCode = success ? abi.decode(result, (int32)) : int32(22); // 22 = fail
+        // Note: We don't revert if association fails (it might already be associated)
     }
 
     // View function to calculate pending yield passively
@@ -53,7 +68,8 @@ contract PlayFiVault is Ownable {
         require(playToken.balanceOf(address(this)) >= pendingYield, "Vault has insufficient PLAY reserve");
         
         emit YieldClaimed(msg.sender, pendingYield);
-        playToken.transfer(msg.sender, pendingYield);
+        bool success = playToken.transfer(msg.sender, pendingYield);
+        require(success, "Yield transfer failed. Are you associated?");
     }
 
     function deposit() external payable {
@@ -107,14 +123,21 @@ contract PlayFiVault is Ownable {
     // Admin / Treasury Management Functions
     // ============================================
 
-    // Custom admin function to pull HBAR from the contract safely
+    // Manual association call just in case constructor fails or token changes
+    function associateVault(address _token) external onlyOwner {
+         (bool success, bytes memory result) = HTS_PRECOMPILE.call(
+            abi.encodeWithSelector(IHederaTokenService.associateToken.selector, address(this), _token)
+        );
+        int32 responseCode = success ? abi.decode(result, (int32)) : int32(22);
+        require(responseCode == 22 || success, "Manual association failed");
+    }
+
     function adminWithdrawHbar(uint256 amount) external onlyOwner {
         require(address(this).balance >= amount, "Not enough HBAR in the contract.");
         (bool success, ) = payable(owner()).call{value: amount}("");
         require(success, "Admin transfer failed");
     }
 
-    // Custom admin function to rescue PLAY tokens or sweep excess reserves
     function adminWithdrawPlay(uint256 amount) external onlyOwner {
         require(playToken.balanceOf(address(this)) >= amount, "Not enough PLAY in the contract.");
         playToken.transfer(owner(), amount);
