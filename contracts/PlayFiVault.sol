@@ -17,13 +17,14 @@ contract PlayFiVault is Ownable {
     
     // Reward rate for 8-decimal PLAY token:
     // 1 PLAY token = 100,000,000 units. 
-    // 100 PLAY tokens per day = 10,000,000,000 units per day.
-    // Base formula factor = 1,157,407,407,407,400 (accounts for Hedera EVM tinybar msg.value interaction)
-    uint256 public rewardRatePerSecond = 1157407407407400; 
+    // 1000 PLAY tokens per day = 100,000,000,000 units per day.
+    // Base formula factor = 11,574,074,074,074,074 (accounts for Hedera EVM tinybar msg.value interaction)
+    uint256 public rewardRatePerSecond = 11574074074074074; 
     
     struct Stake {
         uint256 amount;
         uint256 lastClaimTimestamp;
+        uint256 firstDepositTimestamp; // Tracks when capital was locked
     }
 
     mapping(address => Stake) public stakes;
@@ -47,14 +48,26 @@ contract PlayFiVault is Ownable {
     // View function to calculate pending yield passively
     function calculateYield(address user) public view returns (uint256) {
         Stake memory userStake = stakes[user];
-        if (userStake.amount == 0 || userStake.lastClaimTimestamp == 0) {
+        if (userStake.amount == 0 || userStake.lastClaimTimestamp == 0 || userStake.firstDepositTimestamp == 0) {
             return 0;
         }
         
         uint256 timeStaked = block.timestamp - userStake.lastClaimTimestamp;
+        uint256 totalTimeHeld = block.timestamp - userStake.firstDepositTimestamp;
         
-        // reward = (amount_staked / 1 ether) * timeStaked * rewardRatePerSecond
-        uint256 reward = (userStake.amount * timeStaked * rewardRatePerSecond) / 1 ether;
+        uint256 dynamicRate = rewardRatePerSecond; // Base Tier Rate
+        
+        // Multi-tier Dynamic Multipliers based on time held
+        if (totalTimeHeld >= 14 days) {
+            dynamicRate = dynamicRate * 2;          // Diamond: 2.0x after 14 days
+        } else if (totalTimeHeld >= 7 days) {
+            dynamicRate = (dynamicRate * 150) / 100; // Gold:    1.5x after 7 days
+        } else if (totalTimeHeld >= 3 days) {
+            dynamicRate = (dynamicRate * 120) / 100; // Silver:  1.2x after 3 days
+        }
+        
+        // reward = (amount_staked / 1 ether) * timeStaked * dynamicRate
+        uint256 reward = (userStake.amount * timeStaked * dynamicRate) / 1 ether;
         return reward;
     }
 
@@ -88,6 +101,15 @@ contract PlayFiVault is Ownable {
             }
         }
 
+        // Apply Capital-Weighted Time Averaging formula for returning users
+        if (stakes[msg.sender].amount == 0) {
+            stakes[msg.sender].firstDepositTimestamp = block.timestamp;
+        } else {
+            uint256 oldWeight = stakes[msg.sender].firstDepositTimestamp * stakes[msg.sender].amount;
+            uint256 newWeight = block.timestamp * msg.value;
+            stakes[msg.sender].firstDepositTimestamp = (oldWeight + newWeight) / (stakes[msg.sender].amount + msg.value);
+        }
+
         stakes[msg.sender].amount += msg.value;
         stakes[msg.sender].lastClaimTimestamp = block.timestamp;
         totalValueLocked += msg.value;
@@ -108,6 +130,7 @@ contract PlayFiVault is Ownable {
 
         stakes[msg.sender].amount = 0;
         stakes[msg.sender].lastClaimTimestamp = 0;
+        stakes[msg.sender].firstDepositTimestamp = 0; // Hard reset time tracking
         totalValueLocked -= amount;
 
         emit Withdrawn(msg.sender, amount);

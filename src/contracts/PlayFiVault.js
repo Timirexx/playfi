@@ -1,6 +1,6 @@
 export const PLAY_TOKEN_ID = '0.0.8726991';
 export const PLAY_TOKEN_ADDRESS = '0x00000000000000000000000000000000008529cf';
-export const PLAYFI_VAULT_ADDRESS = '0x910381F4D99431fa6C1b03521143F9c0c24E435d';
+export const PLAYFI_VAULT_ADDRESS = '0x759266C7C238191E32a33445386cfCdd918D1EEA';
 
 export const PLAY_TOKEN_ABI = [
   {
@@ -304,6 +304,11 @@ export const PLAYFI_VAULT_ABI = [
       {
         "internalType": "uint256",
         "name": "lastClaimTimestamp",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "firstDepositTimestamp",
         "type": "uint256"
       }
     ],

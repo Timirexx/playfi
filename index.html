@@ -264,6 +264,19 @@
                             <span style="font-size: 1.5rem; font-weight: bold; color: white;"><span id="vault-staked">0.00</span> HBAR</span>
                         </div>
 
+                        <!-- DYNAMIC LOYALTY TIER UI -->
+                        <div class="vault-stats" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 1rem;">
+                            <div style="display: flex; flex-direction: column;">
+                                <span style="font-size: 1.2rem; color: var(--text-muted);">Loyalty Tier:</span>
+                                <span style="font-size: 0.8rem; color: var(--neon-blue); opacity: 0.8;">Time Staked: <span id="vault-time-held">0 Days</span></span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 0.5rem; background: rgba(0, 240, 255, 0.1); padding: 0.5rem 1rem; border-radius: 8px; border: 1px solid rgba(0, 240, 255, 0.3);">
+                                <span id="vault-tier-icon" style="font-size: 1.2rem;">⚪</span>
+                                <span id="vault-tier-name" style="font-size: 1.2rem; font-weight: bold; color: white;">Base</span>
+                                <span id="vault-tier-multiplier" style="font-size: 1.2rem; font-weight: 900; color: var(--neon-blue);">(1.0x)</span>
+                            </div>
+                        </div>
+
                         <div class="vault-stats" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 1rem;">
                             <span style="font-size: 1.2rem; color: #f7b733;">Passive Yield Earned:</span>
                             <div style="display: flex; align-items: center; gap: 1rem;">

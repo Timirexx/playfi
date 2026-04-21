@@ -9,6 +9,9 @@ export const vault = {
         stakedBalance: '0.00',
         earnedPlay: '0.00',
         playBalance: '0.00',
+        tierName: 'Base',
+        tierMult: '1.0x',
+        timeHeld: '0 Days',
         isAssociated: true, // Default to true, we'll check
         isProcessing: false
     },
@@ -25,14 +28,43 @@ export const vault = {
             });
             this.state.tvl = parseFloat(formatUnits(tvlRaw, 8)).toFixed(2);
 
-            // Fetch User Staked Balance (Hedera EVM uses 8 decimals for HBAR msg.value)
-            const balanceRaw = await readContract(wagmiAdapter.wagmiConfig, {
+            // Fetch User Stake Info (struct returns: [amount, lastClaimTs, firstDepositTs])
+            const stakeRaw = await readContract(wagmiAdapter.wagmiConfig, {
                 address: PLAYFI_VAULT_ADDRESS,
                 abi: PLAYFI_VAULT_ABI,
-                functionName: 'balances',
+                functionName: 'stakes',
                 args: [userAddress]
             });
-            this.state.stakedBalance = parseFloat(formatUnits(balanceRaw, 8)).toFixed(2);
+            const stakedAmountIdxZero = stakeRaw[0] || 0n;
+            this.state.stakedBalance = parseFloat(formatUnits(stakedAmountIdxZero, 8)).toFixed(2);
+            
+            // Calculate Loyalty Tier dynamically
+            const firstDepositTs = Number(stakeRaw[2] || 0n);
+            if (stakedAmountIdxZero > 0n && firstDepositTs > 0) {
+                const now = Math.floor(Date.now() / 1000);
+                const secondsHeld = now - firstDepositTs;
+                const daysHeld = Math.floor(secondsHeld / 86400);
+                
+                this.state.timeHeld = `${daysHeld} Day${daysHeld !== 1 ? 's' : ''}`;
+                
+                if (secondsHeld >= 14 * 86400) {
+                    this.state.tierName = 'Diamond';
+                    this.state.tierMult = '2.0x';
+                } else if (secondsHeld >= 7 * 86400) {
+                    this.state.tierName = 'Gold';
+                    this.state.tierMult = '1.5x';
+                } else if (secondsHeld >= 3 * 86400) {
+                    this.state.tierName = 'Silver';
+                    this.state.tierMult = '1.2x';
+                } else {
+                    this.state.tierName = 'Base';
+                    this.state.tierMult = '1.0x';
+                }
+            } else {
+                this.state.timeHeld = '0 Days';
+                this.state.tierName = 'Base';
+                this.state.tierMult = '1.0x';
+            }
 
             // Fetch Earned PLAY Yield (PLAY is 8 decimals)
             const yieldRaw = await readContract(wagmiAdapter.wagmiConfig, {
@@ -224,10 +256,26 @@ export const vault = {
         const walletPlayDisplay = document.getElementById('wallet-play-balance');
         const associateBtn = document.getElementById('vault-associate-btn');
         
+        const tierName = document.getElementById('vault-tier-name');
+        const tierMult = document.getElementById('vault-tier-multiplier');
+        const timeHeld = document.getElementById('vault-time-held');
+        const tierIcon = document.getElementById('vault-tier-icon');
+        
         if (tvlDisplay) tvlDisplay.innerText = this.state.tvl;
         if (stakedDisplay) stakedDisplay.innerText = this.state.stakedBalance;
         if (earnedDisplay) earnedDisplay.innerText = this.state.earnedPlay;
         if (walletPlayDisplay) walletPlayDisplay.innerText = this.state.playBalance;
+        
+        if (tierName) tierName.innerText = this.state.tierName;
+        if (tierMult) tierMult.innerText = `(${this.state.tierMult})`;
+        if (timeHeld) timeHeld.innerText = this.state.timeHeld;
+        
+        if (tierIcon) {
+            if (this.state.tierName === 'Diamond') tierIcon.innerText = '💎';
+            else if (this.state.tierName === 'Gold') tierIcon.innerText = '🏆';
+            else if (this.state.tierName === 'Silver') tierIcon.innerText = '🥈';
+            else tierIcon.innerText = '⚪';
+        }
 
         if (associateBtn) {
             if (this.state.isAssociated) {
