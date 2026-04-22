@@ -27,7 +27,8 @@ const app = {
     async init() {
         console.log('[PLAYFI] App initializing...');
         
-        // 1. Setup Reown AppKit Listeners
+        // 0. Ensure UI reflects initial locked state immediately
+        this.updateUI();
         modal.subscribeAccount((account) => {
             if (account.isConnected && account.address && !this.state.isConnected) {
                 console.log("[PLAYFI] Reown Account Connected:", account.address);
