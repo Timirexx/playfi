@@ -254,7 +254,7 @@ export const vault = {
                 address: PLAYFI_VAULT_ADDRESS,
                 abi: PLAYFI_VAULT_ABI,
                 functionName: 'withdrawAmount',
-                args: [parseEther(amount.toString())],
+                args: [parseUnits(amount.toString(), 8)],
                 gas: 800000n // Bypass gas estimation
             });
 
