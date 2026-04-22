@@ -148,6 +148,7 @@ const wheelGame = {
         this.el.resultDisplay.style.color = slice.color;
         this.el.resultDisplay.classList.remove('hidden');
 
+        if (slice.mult > 0) {
             const winAmount = this.state.betAmount * slice.mult;
             app.showToast(`JACKPOT! You won ${winAmount.toFixed(2)} HBAR.`, 'success');
             

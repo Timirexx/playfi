@@ -921,6 +921,10 @@ body.is-locked nav {
 }
 
 /* Hide desktop elements on mobile */
+@media (min-width: 769px) {
+    .mobile-bottom-nav {
+        display: none;
+    }
 }
 
 /* LEADERBOARD STYLES */
