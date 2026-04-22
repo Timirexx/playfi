@@ -16,6 +16,21 @@
     <!-- Background Effects -->
     <div class="bg-glow"></div>
 
+    <!-- Global Connection Gate -->
+    <div id="global-lock-overlay" class="lock-overlay">
+        <div class="lock-content glass-panel" style="max-width: 600px; padding: 3rem; border: 2px solid var(--neon-blue); box-shadow: 0 0 50px var(--neon-blue-glow);">
+            <div class="brand-text" style="font-size: 3.5rem; margin-bottom: 1.5rem; display: block; text-align: center;">PLAYFI</div>
+            <h2 class="neon-text" style="font-size: 2rem; margin-bottom: 1rem; color: white;">The Future of Gaming is Here</h2>
+            <p style="margin-bottom: 2rem; color: var(--text-muted); font-size: 1.1rem; line-height: 1.6;">
+                Experience the ultimate high-transaction DeFi arcade. Stake HBAR, generate passive points, and climb the leaderboard in our high-stakes mini-games. Fast, fair, and built for winners.
+            </p>
+            <div style="display: flex; flex-direction: column; gap: 1rem;">
+                <button class="btn btn-hero btn-glow" onclick="app.openWalletModal()">Connect Wallet to Enter</button>
+                <p style="font-size: 0.8rem; color: var(--neon-blue); opacity: 0.8;">Secure. Decentralized. Powered by Hedera.</p>
+            </div>
+        </div>
+    </div>
+
     <!-- Navigation -->
     <nav class="navbar glass-panel">
         <div class="nav-brand" onclick="app.navigate('home')">
@@ -50,12 +65,7 @@
         </div>
     </nav>
 
-    <main id="app-container" class="is-locked">
-        <div id="global-lock-overlay" class="lock-overlay">
-            <h2 class="neon-text">GAMES LOCKED</h2>
-            <p style="margin: 1rem 0; color: var(--text-muted);">Please connect your Hedera wallet to play.</p>
-            <button class="btn btn-glow" onclick="app.openWalletModal()">Connect Wallet</button>
-        </div>
+    <main id="app-container">
         
         <!-- HOME VIEW -->
         <section id="view-home" class="view section-active">

@@ -342,16 +342,18 @@ const app = {
                 userBalanceEl.style.color = this.state.balanceError ? 'var(--danger)' : 'var(--neon-blue)';
             }
             if (profileUsernameEl) profileUsernameEl.innerText = this.state.username;
+            
+            document.body.classList.remove('is-locked');
             if (appContainer) {
                 appContainer.classList.remove('is-locked');
-                document.querySelectorAll('.view').forEach(v => v.classList.remove('game-locked'));
             }
         } else {
             if (connectBtn) connectBtn.classList.remove('hidden');
             if (userProfile) userProfile.classList.add('hidden');
+            
+            document.body.classList.add('is-locked');
             if (appContainer) {
                 appContainer.classList.add('is-locked');
-                document.querySelectorAll('.view').forEach(v => v.classList.add('game-locked'));
             }
         }
     },

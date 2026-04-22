@@ -697,23 +697,34 @@ input[type="number"]:focus {
 }
 
 .lock-overlay {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 100;
-    text-align: center;
-    pointer-events: all;
-    background: rgba(5, 5, 8, 0.8);
-    padding: 2rem;
-    border-radius: 20px;
-    border: 2px solid var(--neon-blue);
-    box-shadow: 0 0 30px var(--neon-blue-glow);
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 2000;
     display: none;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(25px);
+    -webkit-backdrop-filter: blur(25px);
+    background: rgba(5, 5, 8, 0.7);
+    padding: 2rem;
+    text-align: center;
 }
 
-.is-locked .lock-overlay {
-    display: block;
+body.is-locked .lock-overlay {
+    display: flex;
+}
+
+body.is-locked {
+    overflow: hidden; /* Prevent scrolling when locked */
+}
+
+body.is-locked main, 
+body.is-locked nav {
+    filter: blur(10px);
+    pointer-events: none;
 }
 
 /* Coming Soon Locking */
