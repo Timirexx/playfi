@@ -168,6 +168,9 @@ const minesGame = {
         const winAmount = this.state.betAmount * this.state.currentMultiplier;
         app.showToast(`CASHOUT SUCCESS! ${winAmount.toFixed(2)} HBAR added.`, 'success');
         
+        // Report to Leaderboard
+        app.reportGameResult(winAmount, 0);
+        
         // In simulation, we update the UI immediately
         setTimeout(() => app.refreshBalance(), 500);
         this.endGame(true);
@@ -176,6 +179,9 @@ const minesGame = {
     crash() {
         this.state.gameOver = true;
         app.showToast(`Boom! You lost ${this.state.betAmount} HBAR.`, 'error');
+        
+        // Report to Leaderboard
+        app.reportGameResult(0, this.state.betAmount);
         setTimeout(() => app.refreshBalance(), 500);
         this.endGame(false);
     },

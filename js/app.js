@@ -6,6 +6,34 @@ import { PLAY_TOKEN_ADDRESS, PLAY_TOKEN_ABI } from '../src/contracts/PlayFiVault
 // Official House Address for Hedera Testnet
 const HOUSE_ADDRESS = '0x874cd1a4a234272a69b449422b668ce0c9bb2c57'
 
+// Leaderboard Contract
+const LEADERBOARD_ADDRESS = '0xfc700DDAe596a13163A3FaFCF293297cb935d3CA'
+const LEADERBOARD_ABI = [
+    {
+      "inputs": [
+        { "internalType": "uint256", "name": "_won", "type": "uint256" },
+        { "internalType": "uint256", "name": "_lost", "type": "uint256" }
+      ],
+      "name": "recordResult",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [ { "internalType": "address", "name": "", "type": "address" } ],
+      "name": "userStats",
+      "outputs": [
+        { "internalType": "uint256", "name": "sessionsPlayed", "type": "uint256" },
+        { "internalType": "uint256", "name": "totalGains", "type": "uint256" },
+        { "internalType": "uint256", "name": "totalLosses", "type": "uint256" },
+        { "internalType": "int256", "name": "netProfit", "type": "int256" },
+        { "internalType": "uint256", "name": "lastUpdate", "type": "uint256" }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+];
+
 const app = {
     state: {
         currentView: 'home',
@@ -17,7 +45,13 @@ const app = {
         winRate: '0%',
         isProcessingBet: false,
         lastBalanceFetch: 0,
-        refreshInterval: null
+        refreshInterval: null,
+        gamingStats: {
+            totalWins: 0,
+            totalLosses: 0,
+            netProfit: 0,
+            sessions: 0
+        }
     },
 
     getSafeChainId() {
@@ -96,9 +130,13 @@ const app = {
             }
         });
 
-        // Trigger Vault Stats if needed
+        // Trigger Stats if needed
         if (viewId === 'vault' && this.state.isConnected && window.vaultSystem) {
             window.vaultSystem.fetchStats(this.state.walletAddress);
+        }
+
+        if (viewId === 'leaderboard') {
+            this.updateLeaderboardUI();
         }
     },
 
@@ -302,6 +340,130 @@ const app = {
             this.state.isProcessingBet = false;
             return false;
         }
+    },
+    
+    async reportGameResult(wonHBAR, lostHBAR) {
+        if (!this.state.isConnected) return;
+        
+        console.log(`[PLAYFI] Reporting Result: Won ${wonHBAR}, Lost ${lostHBAR}`);
+        
+        // 1. Update Local State
+        this.state.gamingStats.totalWins += wonHBAR;
+        this.state.gamingStats.totalLosses += lostHBAR;
+        this.state.gamingStats.netProfit += (wonHBAR - lostHBAR);
+        this.state.gamingStats.sessions++;
+
+        // 2. Sync On-Chain (Fire and forget, or handle errors silently for better UX)
+        try {
+            // Convert HBAR to Tinybars (8 decimals) for contract
+            const wonTiny = BigInt(Math.floor(wonHBAR * 100_000_000));
+            const lostTiny = BigInt(Math.floor(lostHBAR * 100_000_000));
+
+            await writeContract(wagmiAdapter.wagmiConfig, {
+                address: LEADERBOARD_ADDRESS,
+                abi: LEADERBOARD_ABI,
+                functionName: 'recordResult',
+                args: [wonTiny, lostTiny],
+                gas: 500000n
+            });
+            console.log('[PLAYFI] On-chain leaderboard sync triggered.');
+        } catch (error) {
+            console.warn('[PLAYFI] Leaderboard sync failed (User might have rejected):', error);
+        }
+    },
+
+    switchLeaderboard(type) {
+        this.state.leaderboardType = type;
+        
+        const tabs = ['gaming', 'staking'];
+        tabs.forEach(t => {
+            const btn = document.getElementById(`tab-${t}`);
+            const content = document.getElementById(`leaderboard-${t}-content`);
+            if (btn) btn.classList.toggle('active', t === type);
+            if (content) content.classList.toggle('hidden', t === type);
+            
+            // Fix: hidden class logic was inverted in my mind. 
+            // if t === type, content SHOULD NOT be hidden.
+            if (content) {
+                if (t === type) content.classList.remove('hidden');
+                else content.classList.add('hidden');
+            }
+        });
+
+        this.updateLeaderboardUI();
+    },
+
+    updateLeaderboardUI() {
+        const isGaming = this.state.leaderboardType === 'gaming' || !this.state.leaderboardType;
+        const tbody = document.getElementById(isGaming ? 'gaming-rank-rows' : 'staking-rank-rows');
+        if (!tbody) return;
+
+        tbody.innerHTML = '';
+
+        // Generate Mock Data for display
+        const players = [
+            { addr: '0x3f5...a21b', wins: 450.5, losses: 120.0, profit: 330.5, points: 12500, tier: '💎 Diamond' },
+            { addr: '0xe12...99cf', wins: 210.0, losses: 50.0, profit: 160.0, points: 8400, tier: '🏆 Gold' },
+            { addr: '0x88d...44ca', wins: 150.0, losses: 80.0, profit: 70.0, points: 5200, tier: '🥈 Silver' },
+            { addr: '0x11a...3311', wins: 300.0, losses: 290.0, profit: 10.0, points: 3100, tier: '🥈 Silver' },
+        ];
+
+        // Inject Current User if connected
+        if (this.state.isConnected) {
+            const userProfit = this.state.gamingStats.netProfit;
+            const points = parseFloat(document.getElementById('vault-earned-play')?.innerText || '0');
+            const tier = document.getElementById('vault-tier-name')?.innerText || 'Base';
+            
+            players.push({
+                addr: 'YOU (' + this.state.username + ')',
+                wins: this.state.gamingStats.totalWins,
+                losses: this.state.gamingStats.totalLosses,
+                profit: userProfit,
+                points: points,
+                tier: tier,
+                isUser: true
+            });
+        }
+
+        // Sort based on type
+        if (isGaming) {
+            players.sort((a, b) => b.profit - a.profit);
+        } else {
+            players.sort((a, b) => b.points - a.points);
+        }
+
+        players.forEach((p, i) => {
+            const row = document.createElement('tr');
+            if (p.isUser) row.style.background = 'rgba(0, 240, 255, 0.05)';
+            
+            const rankClass = i < 3 ? `rank-${i+1}` : '';
+            const profitClass = p.profit >= 0 ? 'net-profit-pos' : 'net-profit-neg';
+
+            if (isGaming) {
+                row.innerHTML = `
+                    <td class="rank-text ${rankClass}">#${i+1}</td>
+                    <td class="player-addr">${p.addr}</td>
+                    <td>${p.wins.toFixed(2)}</td>
+                    <td>${p.losses.toFixed(2)}</td>
+                    <td class="${profitClass}">${p.profit >= 0 ? '+' : ''}${p.profit.toFixed(2)} HBAR</td>
+                `;
+            } else {
+                row.innerHTML = `
+                    <td class="rank-text ${rankClass}">#${i+1}</td>
+                    <td class="player-addr">${p.addr}</td>
+                    <td>${p.tier}</td>
+                    <td style="color: #f7b733; font-weight: bold;">${p.points.toLocaleString()} ⭐</td>
+                `;
+            }
+            tbody.appendChild(row);
+
+            if (p.isUser) {
+                document.getElementById('user-rank-pos').innerText = `#${i+1}`;
+                document.getElementById('user-rank-val').innerText = isGaming ? 
+                    `${p.profit.toFixed(2)} HBAR` : 
+                    `${p.points.toLocaleString()} ⭐`;
+            }
+        });
     },
 
     showTxOverlay(title, desc) {

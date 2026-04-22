@@ -326,6 +326,75 @@
             </div>
         </section>
 
+        <!-- DUAL LEADERBOARD VIEW -->
+        <section id="view-leaderboard" class="view hidden">
+            <div class="hero-section">
+                <div class="hero-header">
+                    <h2 class="neon-text outline-text">LEADERBOARD</h2>
+                    <p style="color: var(--text-muted);">Compete with the top PlayFi legends</p>
+                </div>
+
+                <!-- Tabs -->
+                <div class="leaderboard-tabs glass-panel">
+                    <button id="tab-gaming" class="tab-btn active" onclick="app.switchLeaderboard('gaming')">🎯 Gaming Legends</button>
+                    <button id="tab-staking" class="tab-btn" onclick="app.switchLeaderboard('staking')">🏦 Staking Stars</button>
+                </div>
+
+                <!-- Gaming Leaderboard -->
+                <div id="leaderboard-gaming-content" class="leaderboard-content">
+                    <div class="glass-panel" style="padding: 0; overflow: hidden; margin-top: 2rem;">
+                        <table class="leaderboard-table">
+                            <thead>
+                                <tr>
+                                    <th>Rank</th>
+                                    <th>Player</th>
+                                    <th>Wins</th>
+                                    <th>Losses</th>
+                                    <th>Net Profit</th>
+                                </tr>
+                            </thead>
+                            <tbody id="gaming-rank-rows">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Staking Leaderboard -->
+                <div id="leaderboard-staking-content" class="leaderboard-content hidden">
+                    <div class="glass-panel" style="padding: 0; overflow: hidden; margin-top: 2rem;">
+                        <table class="leaderboard-table">
+                            <thead>
+                                <tr>
+                                    <th>Rank</th>
+                                    <th>Player</th>
+                                    <th>Tier</th>
+                                    <th>Points (⭐)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="staking-rank-rows">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Personal Rank Section -->
+                <div class="user-rank-box glass-panel" style="margin-top: 2rem; border: 1px solid var(--neon-blue);">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <span style="color: var(--text-muted); font-size: 0.9rem;">Your Current Rank</span>
+                            <h4 id="user-rank-pos" style="font-size: 1.5rem; color: white;">#--</h4>
+                        </div>
+                        <div class="text-right">
+                            <span style="color: var(--text-muted); font-size: 0.9rem;">Total Performance</span>
+                            <h4 id="user-rank-val" style="font-size: 1.5rem; color: var(--neon-blue);">0.00</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
     </main>
 
     <!-- Mobile Bottom Navigation -->

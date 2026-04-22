@@ -306,6 +306,42 @@
       "artifacts": [
         "PlayToken"
       ]
+    },
+    "C:\\Users\\Tunmise\\.gemini\\antigravity\\scratch\\playfi\\contracts\\PlayFiLeaderboard.sol": {
+      "lastModificationDate": 1776873233319,
+      "contentHash": "8a81d9cb3f879443457ba621fa4b6310",
+      "sourceName": "contracts/PlayFiLeaderboard.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "evmVersion": "paris",
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "PlayFiLeaderboard"
+      ]
     }
   }
 }

@@ -150,6 +150,9 @@ const crashGame = {
         const winAmount = this.state.betAmount * this.state.multiplier;
         app.showToast(`WINNER! Cashed out ${winAmount.toFixed(2)} HBAR at ${this.state.multiplier.toFixed(2)}x! 🎉`, 'success');
         
+        // Report to Leaderboard
+        app.reportGameResult(winAmount, 0);
+        
         this.el.btn.innerText = 'Place Bet';
         this.el.btn.disabled = false;
         this.el.btn.classList.remove('btn-hero-cashout');
@@ -176,6 +179,10 @@ const crashGame = {
 
         if (this.state.betAmount > 0) {
             app.showToast(`Crashed at ${this.state.crashPoint}x. You lost ${this.state.betAmount} HBAR.`, 'error');
+            
+            // Report to Leaderboard
+            app.reportGameResult(0, this.state.betAmount);
+            
             this.state.betAmount = 0;
         }
 

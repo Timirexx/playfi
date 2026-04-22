@@ -148,12 +148,19 @@ const wheelGame = {
         this.el.resultDisplay.style.color = slice.color;
         this.el.resultDisplay.classList.remove('hidden');
 
-        if (slice.mult > 0) {
             const winAmount = this.state.betAmount * slice.mult;
             app.showToast(`JACKPOT! You won ${winAmount.toFixed(2)} HBAR.`, 'success');
+            
+            // Report to Leaderboard
+            app.reportGameResult(winAmount, 0);
+            
             setTimeout(() => app.refreshBalance(), 500);
         } else {
             app.showToast(`Better luck next time! Lost ${this.state.betAmount} HBAR.`, 'error');
+            
+            // Report to Leaderboard
+            app.reportGameResult(0, this.state.betAmount);
+            
             setTimeout(() => app.refreshBalance(), 500);
         }
     }
