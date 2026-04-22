@@ -512,10 +512,13 @@ input[type="number"]:focus {
 }
 
 .modal-content {
-    width: 90%;
-    max-width: 400px;
-    padding: 2rem;
+    width: 95%;
+    max-width: 450px;
+    padding: 2.5rem 2rem;
     border: 1px solid var(--neon-blue);
+    border-radius: 20px;
+    position: relative;
+    box-shadow: 0 0 40px rgba(0, 240, 255, 0.15);
 }
 
 .modal-header {

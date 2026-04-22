@@ -297,7 +297,7 @@
                         <div style="display: flex; flex-direction: column; gap: 0.8rem;">
                             <div style="display: flex; gap: 1rem;">
                                 <button id="vault-deposit-btn" class="btn btn-hero btn-glow" style="flex: 1;" onclick="vaultSystem.deposit(document.getElementById('vault-amount-input').value)">Stake HBAR</button>
-                                <button id="vault-withdraw-partial-btn" class="btn btn-hero" style="flex: 1; border: 1px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.05);" onclick="vaultSystem.withdraw(document.getElementById('vault-amount-input').value)">Withdraw</button>
+                                <button id="vault-withdraw-trigger-btn" class="btn btn-hero" style="flex: 1; border: 1px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.05);" onclick="vaultSystem.openWithdrawModal()">Withdraw</button>
                             </div>
                             <button id="vault-withdraw-all-btn" class="btn" style="width: 100%; opacity: 0.7; font-size: 0.9rem;" onclick="vaultSystem.withdrawAll()">Withdraw ALL (Unstake Everything)</button>
                         </div>
@@ -324,6 +324,36 @@
             <div class="tx-spinner"></div>
             <h3 id="tx-status-title">Transaction Pending</h3>
             <p id="tx-status-desc">Please confirm in your wallet...</p>
+        </div>
+    </div>
+
+    <!-- Withdrawal Modal -->
+    <div id="withdraw-modal" class="modal-overlay hidden">
+        <div class="modal-content glass-panel">
+            <div class="modal-header">
+                <h3 class="neon-text">Withdraw HBAR</h3>
+                <button class="btn-close" onclick="vaultSystem.closeWithdrawModal()">&times;</button>
+            </div>
+            <div style="margin: 1.5rem 0;">
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.5rem;">Available to Withdraw:</p>
+                <h4 style="color: var(--neon-blue); font-size: 1.5rem;"><span id="modal-staked-balance">0.00</span> HBAR</h4>
+            </div>
+            <div class="bet-input-group">
+                <label>Withdrawal Amount</label>
+                <div class="input-wrapper">
+                    <input type="number" id="modal-withdraw-amount" placeholder="0.00">
+                    <span class="input-currency">HBAR</span>
+                </div>
+                <div class="bet-presets" style="margin-top: 0.5rem;">
+                    <button onclick="document.getElementById('modal-withdraw-amount').value = (parseFloat(vaultSystem.state.stakedBalance) * 0.25).toFixed(2)">25%</button>
+                    <button onclick="document.getElementById('modal-withdraw-amount').value = (parseFloat(vaultSystem.state.stakedBalance) * 0.5).toFixed(2)">50%</button>
+                    <button onclick="document.getElementById('modal-withdraw-amount').value = vaultSystem.state.stakedBalance">MAX</button>
+                </div>
+            </div>
+            <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                <button class="btn" style="flex: 1;" onclick="vaultSystem.closeWithdrawModal()">Cancel</button>
+                <button class="btn btn-glow" style="flex: 2;" onclick="vaultSystem.withdraw(document.getElementById('modal-withdraw-amount').value)">Confirm Withdrawal</button>
+            </div>
         </div>
     </div>
 

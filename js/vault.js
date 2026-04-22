@@ -219,6 +219,25 @@ export const vault = {
         }
     },
 
+    openWithdrawModal() {
+        if (!this.state.stakedBalance || parseFloat(this.state.stakedBalance) <= 0) {
+            if (window.app) window.app.showToast('You have nothing staked to withdraw', 'error');
+            return;
+        }
+        const modal = document.getElementById('withdraw-modal');
+        const balanceDisplay = document.getElementById('modal-staked-balance');
+        const input = document.getElementById('modal-withdraw-amount');
+        
+        if (balanceDisplay) balanceDisplay.innerText = this.state.stakedBalance;
+        if (input) input.value = '';
+        if (modal) modal.classList.remove('hidden');
+    },
+
+    closeWithdrawModal() {
+        const modal = document.getElementById('withdraw-modal');
+        if (modal) modal.classList.add('hidden');
+    },
+
     async withdraw(amount) {
         if (this.state.isProcessing || !amount || amount <= 0) return;
         if (parseFloat(amount) > parseFloat(this.state.stakedBalance)) {
@@ -226,6 +245,7 @@ export const vault = {
             return;
         }
         this.state.isProcessing = true;
+        this.closeWithdrawModal(); // Hide modal when processing starts
         
         if (window.app) window.app.showTxOverlay('Partial Withdrawal', `Withdrawing ${amount} HBAR and claiming points...`);
 
