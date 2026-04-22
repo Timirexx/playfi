@@ -318,6 +318,26 @@
 
     </main>
 
+    <!-- Mobile Bottom Navigation -->
+    <nav class="mobile-bottom-nav glass-panel">
+        <button class="mobile-nav-item active" onclick="app.navigate('home')">
+            <span class="nav-icon">🎮</span>
+            <span class="nav-label">Hub</span>
+        </button>
+        <button class="mobile-nav-item" onclick="app.navigate('vault')">
+            <span class="nav-icon">🏦</span>
+            <span class="nav-label">Vault</span>
+        </button>
+        <button class="mobile-nav-item" onclick="app.navigate('rewards')">
+            <span class="nav-icon">🎁</span>
+            <span class="nav-label">Daily</span>
+        </button>
+        <button class="mobile-nav-item" onclick="app.navigate('leaderboard')">
+            <span class="nav-icon">🏆</span>
+            <span class="nav-label">Social</span>
+        </button>
+    </nav>
+
     <!-- Transaction Overlay -->
     <div id="tx-overlay" class="tx-overlay hidden">
         <div class="tx-modal glass-panel">

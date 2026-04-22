@@ -800,10 +800,69 @@ input[type="number"]:focus {
     font-size: 0.9rem;
 }
 
-/* Responsive */
+/* Responsive & Mobile-First Transformation */
 @media (max-width: 768px) {
+    /* Layout Adjustments */
+    #app-container {
+        padding: 1rem 4vw 6rem 4vw; /* Space for bottom nav */
+    }
+
+    /* Navbar Reduction */
+    .nav-links { display: none; }
+    .hbar-pill, .play-pill { 
+        padding: 0.3rem 0.6rem;
+        font-size: 0.8rem;
+    }
+    .token-icon { width: 12px; height: 12px; }
+    .currency-label { display: none; }
+
+    /* Bottom Nav Bar */
+    .mobile-bottom-nav {
+        display: flex;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 70px;
+        z-index: 1000;
+        border-radius: 20px 20px 0 0;
+        border-bottom: none;
+        justify-content: space-around;
+        align-items: center;
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    .mobile-nav-item {
+        background: none;
+        border: none;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        color: var(--text-muted);
+        gap: 0.3rem;
+        flex: 1;
+        transition: var(--transition);
+    }
+
+    .mobile-nav-item.active {
+        color: var(--neon-blue);
+    }
+
+    .mobile-nav-item .nav-icon {
+        font-size: 1.4rem;
+    }
+
+    .mobile-nav-item .nav-label {
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    /* Crash Game Stacking */
     .crash-container {
         grid-template-columns: 1fr;
+        gap: 1rem;
     }
     .crash-graph {
         height: 250px;
@@ -811,7 +870,48 @@ input[type="number"]:focus {
     .multiplier-display {
         font-size: 3.5rem;
     }
-    .nav-links {
-        display: none; /* Add hamburger later */
+    .hero-header h2 {
+        font-size: 2.2rem;
+    }
+
+    /* Vault Stacking */
+    .vault-grid {
+        grid-template-columns: 1fr 1fr !important;
+    }
+    .vault-stat-card {
+        padding: 1rem !important;
+    }
+    
+    /* Touch Optimizations */
+    .btn-hero {
+        padding: 1.2rem;
+        font-size: 1.1rem;
+    }
+    .input-wrapper input {
+        font-size: 1.1rem;
+        padding: 1.2rem 1rem;
+    }
+    
+    .modal-content {
+        width: 95%;
+        padding: 1.5rem;
+    }
+
+    .game-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+    }
+    .game-card {
+        padding: 1.5rem 0.5rem;
+    }
+    .game-icon {
+        font-size: 2.2rem;
+    }
+}
+
+/* Hide desktop elements on mobile */
+@media (min-width: 769px) {
+    .mobile-bottom-nav {
+        display: none;
     }
 }

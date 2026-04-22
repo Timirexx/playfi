@@ -79,12 +79,26 @@ const app = {
         targetView.classList.remove('hidden');
         targetView.classList.add('section-active');
 
+        // Sync Desktop Nav
         document.querySelectorAll('.nav-btn').forEach(btn => {
             btn.classList.remove('active');
             if(btn.innerText.toLowerCase().includes(viewId.toLowerCase())) {
                 btn.classList.add('active');
             }
         });
+
+        // Sync Mobile Nav
+        document.querySelectorAll('.mobile-nav-item').forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.getAttribute('onclick')?.includes(`'${viewId}'`)) {
+                btn.classList.add('active');
+            }
+        });
+
+        // Trigger Vault Stats if needed
+        if (viewId === 'vault' && this.state.isConnected && window.vaultSystem) {
+            window.vaultSystem.fetchStats(this.state.walletAddress);
+        }
     },
 
     openWalletModal() {
