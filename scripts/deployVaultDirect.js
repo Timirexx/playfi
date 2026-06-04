@@ -13,10 +13,10 @@ dotenv.config();
 async function main() {
     console.log("🚀 Starting Standalone PlayFiVault Deployment...");
 
-    const privateKey = process.env.TESTNET_PRIVATE_KEY;
+    const privateKey = process.env.TREASURY_PRIVATE_KEY || process.env.TESTNET_PRIVATE_KEY;
     const rpcUrl = "https://testnet.hashio.io/api";
 
-    if (!privateKey) throw new Error("TESTNET_PRIVATE_KEY is missing in .env");
+    if (!privateKey) throw new Error("TREASURY_PRIVATE_KEY is missing in .env");
 
     const provider = new ethers.JsonRpcProvider(rpcUrl);
     const wallet = new ethers.Wallet(privateKey, provider);

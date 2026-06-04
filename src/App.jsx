@@ -1,0 +1,38 @@
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import Navbar from './components/layout/Navbar';
+import GameTabs from './components/layout/GameTabs';
+import Home from './views/Home';
+import Vault from './views/Vault';
+import Mines from './views/Mines';
+import Spin from './views/Spin';
+import Leaderboard from './views/Leaderboard';
+import ToastContainer from './components/ui/ToastContainer';
+import TxOverlay from './components/ui/TxOverlay';
+
+const App = () => {
+  return (
+    <Router>
+      <div id="app-container">
+        <Navbar />
+        <GameTabs />
+        
+        <main className="content-area">
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/vault" element={<Vault />} />
+            <Route path="/mines" element={<Mines />} />
+            <Route path="/spin" element={<Spin />} />
+            <Route path="/leaderboard" element={<Leaderboard />} />
+            <Route path="*" element={<Navigate to="/" />} />
+          </Routes>
+        </main>
+
+        <TxOverlay />
+        <ToastContainer />
+      </div>
+    </Router>
+  );
+};
+
+export default App;

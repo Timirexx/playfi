@@ -1,44 +1,52 @@
-import fs from "fs";
-import path from "path";
-import solc from "solc";
-import { fileURLToPath } from "url";
+import fs from 'fs';
+import path from 'path';
+import solc from 'solc';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const contractPath = path.resolve(__dirname, "../contracts/PlayFiLeaderboard.sol");
-const source = fs.readFileSync(contractPath, "utf8");
+const contractPath = path.resolve('contracts', 'PlayFiVault.sol');
+const source = fs.readFileSync(contractPath, 'utf8');
 
 const input = {
-  language: "Solidity",
-  sources: {
-    "PlayFiLeaderboard.sol": {
-      content: source,
+    language: 'Solidity',
+    sources: {
+        'PlayFiVault.sol': {
+            content: source
+        }
     },
-  },
-  settings: {
-    outputSelection: {
-      "*": {
-        "*": ["abi", "evm.bytecode"],
-      },
-    },
-  },
+    settings: {
+        outputSelection: {
+            '*': {
+                '*': ['abi', 'evm.bytecode']
+            }
+        },
+        optimizer: {
+            enabled: true,
+            runs: 200
+        }
+    }
 };
 
-console.log("Compiling...");
+console.log('Compiling PlayFiVault...');
 const output = JSON.parse(solc.compile(JSON.stringify(input)));
 
 if (output.errors) {
-  output.errors.forEach((err) => {
-    console.error(err.formattedMessage);
-  });
-  if (output.errors.some(e => e.severity === 'error')) process.exit(1);
+    output.errors.forEach(err => {
+        console.error(err.formattedMessage);
+    });
+    if (output.errors.some(err => err.severity === 'error')) {
+        process.exit(1);
+    }
 }
 
-const contract = output.contracts["PlayFiLeaderboard.sol"]["PlayFiLeaderboard"];
+const contract = output.contracts['PlayFiVault.sol']['PlayFiVault'];
+const artifactsDir = path.resolve('artifacts');
 
-const outPath = path.resolve(__dirname, "../src/contracts/PlayFiLeaderboard.json");
-fs.mkdirSync(path.dirname(outPath), { recursive: true });
-fs.writeFileSync(outPath, JSON.stringify(contract, null, 2));
+if (!fs.existsSync(artifactsDir)) {
+    fs.mkdirSync(artifactsDir);
+}
 
-console.log("✅ Compiled and saved to src/contracts/PlayFiLeaderboard.json");
+fs.writeFileSync(
+    path.join(artifactsDir, 'PlayFiVault.json'),
+    JSON.stringify(contract, null, 2)
+);
+
+console.log('Compilation successful. Artifact saved to artifacts/PlayFiVault.json');

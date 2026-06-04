@@ -1,0 +1,56 @@
+{
+  "_format": "hh3-artifact-1",
+  "contractName": "IVault",
+  "sourceName": "contracts/PlayFiGames.sol",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "user",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "winAmount",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "lossAmount",
+          "type": "uint256"
+        }
+      ],
+      "name": "settleGame",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "user",
+          "type": "address"
+        }
+      ],
+      "name": "userBalances",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x",
+  "deployedBytecode": "0x",
+  "linkReferences": {},
+  "deployedLinkReferences": {},
+  "immutableReferences": {},
+  "inputSourceName": "project/contracts/PlayFiGames.sol",
+  "buildInfoId": "solc-0_8_20-716cba37d966ed315aa86d12225d9d789e7cff1e"
+}

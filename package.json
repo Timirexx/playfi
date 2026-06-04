@@ -17,8 +17,16 @@
     "@reown/appkit": "^1.8.19",
     "@reown/appkit-adapter-wagmi": "^1.8.19",
     "@tanstack/query-core": "^5.99.2",
+    "@tanstack/react-query": "^5.100.7",
+    "@vitejs/plugin-react": "^6.0.1",
+    "axios": "^1.15.2",
     "dotenv": "^17.4.2",
+    "framer-motion": "^12.38.0",
+    "lucide-react": "^1.14.0",
     "ox": "^0.14.18",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
+    "react-router-dom": "^7.14.2",
     "solc": "^0.8.20",
     "viem": "^2.48.1",
     "vite": "^8.0.8",
@@ -29,7 +37,7 @@
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
     "@openzeppelin/contracts": "^5.6.1",
     "ethers": "^6.16.0",
-    "hardhat": "^2.22.1",
+    "hardhat": "^3.4.2",
     "vite-plugin-node-polyfills": "^0.26.0"
   }
 }

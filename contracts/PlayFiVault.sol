@@ -1,212 +1,121 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-
 /**
- * @dev Simple interface for the native Hedera Token Service (HTS) precompile.
+ * @title PlayFiVault
+ * @dev A secure vault for the PlayFi gaming platform.
+ * Users can deposit HBAR to play games, and the platform owner can record wins/losses.
+ * Users can withdraw their winnings at any time.
  */
-interface IHederaTokenService {
-    function associateToken(address account, address token) external returns (int32 responseCode);
-}
-
-contract PlayFiVault is Ownable {
-    address private constant HTS_PRECOMPILE = address(0x167);
-    IERC20 public playToken;
+contract PlayFiVault {
+    address public owner;
     
-    // Reward rate for 8-decimal PLAY token:
-    // 1 PLAY token = 100,000,000 units. 
-    // 100 PLAY tokens per day = 10,000,000,000 units per day.
-    // Base formula factor = 1,157,407,407,407,407 (accounts for Hedera EVM tinybar msg.value interaction)
-    uint256 public rewardRatePerSecond = 1157407407407407; 
+    // Internal balances mapping: user address => balance in tinybars
+    mapping(address => uint256) public userBalances;
     
-    struct Stake {
-        uint256 amount;
-        uint256 lastClaimTimestamp;
-        uint256 firstDepositTimestamp; // Tracks when capital was locked
-        uint256 bonusPoints; // Points generated from transactions (one-time rewards)
-    }
-
-    mapping(address => Stake) public stakes;
-    uint256 public totalValueLocked;
+    // Total liquidity provided by the house
+    uint256 public houseLiquidity;
 
     event Deposited(address indexed user, uint256 amount);
     event Withdrawn(address indexed user, uint256 amount);
-    event YieldClaimed(address indexed user, uint256 yield);
+    event GameResult(address indexed user, uint256 won, uint256 lost);
+    event HouseFunded(uint256 amount);
+    event HouseWithdrawn(uint256 amount);
 
-    constructor(address _playToken) Ownable(msg.sender) {
-        playToken = IERC20(_playToken);
-        
-        // Auto-associate the contract with the native HTS token upon deployment
-        (bool success, bytes memory result) = HTS_PRECOMPILE.call(
-            abi.encodeWithSelector(IHederaTokenService.associateToken.selector, address(this), _playToken)
-        );
-        int32 responseCode = success ? abi.decode(result, (int32)) : int32(22); // 22 = fail
-        // Note: We don't revert if association fails (it might already be associated)
+    constructor() {
+        owner = msg.sender;
     }
 
-    // View function to calculate pending yield passively
-    function calculateYield(address user) public view returns (uint256) {
-        Stake memory userStake = stakes[user];
-        if (userStake.amount == 0 || userStake.lastClaimTimestamp == 0 || userStake.firstDepositTimestamp == 0) {
-            return 0;
-        }
-        
-        uint256 timeStaked = block.timestamp - userStake.lastClaimTimestamp;
-        uint256 totalTimeHeld = block.timestamp - userStake.firstDepositTimestamp;
-        
-        uint256 dynamicRate = rewardRatePerSecond; // Base Tier Rate
-        
-        // Multi-tier Dynamic Multipliers based on time held
-        if (totalTimeHeld >= 14 days) {
-            dynamicRate = dynamicRate * 2;          // Diamond: 2.0x after 14 days
-        } else if (totalTimeHeld >= 7 days) {
-            dynamicRate = (dynamicRate * 150) / 100; // Gold:    1.5x after 7 days
-        } else if (totalTimeHeld >= 3 days) {
-            dynamicRate = (dynamicRate * 120) / 100; // Silver:  1.2x after 3 days
-        }
-        
-        // reward = bonusPoints + (amount_staked / 1 ether) * timeStaked * dynamicRate
-        uint256 reward = userStake.bonusPoints + ((userStake.amount * timeStaked * dynamicRate) / 1 ether);
-        return reward;
+    modifier onlyOwner() {
+        require(msg.sender == owner, "PlayFi: Caller is not the owner");
+        _;
     }
 
-    // Allows users to claim their generated PLAY tokens instantly
-    function claimYield() public {
-        uint256 pendingYield = calculateYield(msg.sender);
-        require(pendingYield > 0, "No yield to claim");
+    mapping(address => bool) public authorizedGames;
 
-        // Reentrancy and time-tracking reset FIRST
-        stakes[msg.sender].lastClaimTimestamp = block.timestamp;
-        stakes[msg.sender].bonusPoints = 0; // Clear action bonuses after claim
-        
-        // Send the minted play tokens from the vault's reserve to the user
-        require(playToken.balanceOf(address(this)) >= pendingYield, "Vault has insufficient PLAY reserve");
-        
-        emit YieldClaimed(msg.sender, pendingYield);
-        bool success = playToken.transfer(msg.sender, pendingYield);
-        require(success, "Yield transfer failed. Are you associated?");
+    modifier onlyAuthorized() {
+        require(msg.sender == owner || authorizedGames[msg.sender], "PlayFi: Not authorized");
+        _;
     }
 
-    function deposit() external payable {
-        require(msg.value > 0, "Deposit amount must be greater than zero");
+    function setGameAuthorization(address gameContract, bool status) public onlyOwner {
+        authorizedGames[gameContract] = status;
+    }
 
-        // Auto-claim existing yield before modifying principal
-        if (stakes[msg.sender].amount > 0) {
-            uint256 pendingYield = calculateYield(msg.sender);
-            if(pendingYield > 0 && playToken.balanceOf(address(this)) >= pendingYield) {
-               // Safely distribute yield inline
-               stakes[msg.sender].lastClaimTimestamp = block.timestamp;
-               stakes[msg.sender].bonusPoints = 0; 
-               emit YieldClaimed(msg.sender, pendingYield);
-               playToken.transfer(msg.sender, pendingYield);
-            }
-        }
-        
-        // Add one-time staking bonus: 100 points per 1 HBAR deposited
-        // Hedera tinybar is 8 decimals, PLAY token is 8 decimals. 1:100 ratio
-        uint256 transactionBonus = msg.value * 100;
-        stakes[msg.sender].bonusPoints += transactionBonus;
-
-        // Apply Capital-Weighted Time Averaging formula for returning users
-        if (stakes[msg.sender].amount == 0) {
-            stakes[msg.sender].firstDepositTimestamp = block.timestamp;
-        } else {
-            uint256 oldWeight = stakes[msg.sender].firstDepositTimestamp * stakes[msg.sender].amount;
-            uint256 newWeight = block.timestamp * msg.value;
-            stakes[msg.sender].firstDepositTimestamp = (oldWeight + newWeight) / (stakes[msg.sender].amount + msg.value);
-        }
-
-        stakes[msg.sender].amount += msg.value;
-        stakes[msg.sender].lastClaimTimestamp = block.timestamp;
-        totalValueLocked += msg.value;
-
+    /**
+     * @dev Deposit HBAR into the player's internal balance.
+     * Rewards (10 Stars per 1 HBAR) are handled on the frontend for immediate feedback.
+     */
+    function deposit() public payable {
+        require(msg.value > 0, "PlayFi: Deposit amount must be greater than 0");
+        userBalances[msg.sender] += msg.value;
         emit Deposited(msg.sender, msg.value);
     }
 
-    function withdraw() external {
-        uint256 amount = stakes[msg.sender].amount;
-        require(amount > 0, "No balance to withdraw");
-
-        // Claim remaining yield before withdrawing
-        uint256 pendingYield = calculateYield(msg.sender);
-        if(pendingYield > 0 && playToken.balanceOf(address(this)) >= pendingYield) {
-            emit YieldClaimed(msg.sender, pendingYield);
-            playToken.transfer(msg.sender, pendingYield);
-        }
-
-        stakes[msg.sender].amount = 0;
-        stakes[msg.sender].lastClaimTimestamp = 0;
-        stakes[msg.sender].firstDepositTimestamp = 0; 
-        stakes[msg.sender].bonusPoints = 0; // Reset all rewards on full withdrawal
-        totalValueLocked -= amount;
-
-        emit Withdrawn(msg.sender, amount);
-
-        (bool success, ) = payable(msg.sender).call{value: amount}("");
-        require(success, "Transfer failed");
-    }
-
-    function withdrawAmount(uint256 _amount) external {
-        uint256 currentStake = stakes[msg.sender].amount;
-        require(currentStake >= _amount, "Insufficient staked balance");
-        require(_amount > 0, "Amount must be greater than zero");
-
-        // 1. Auto-claim all yield first to ensure calculation integrity for the remaining principal
-        uint256 pendingYield = calculateYield(msg.sender);
-        if(pendingYield > 0 && playToken.balanceOf(address(this)) >= pendingYield) {
-            emit YieldClaimed(msg.sender, pendingYield);
-            playToken.transfer(msg.sender, pendingYield);
-        }
-
-        // 2. Adjust State
-        stakes[msg.sender].amount -= _amount;
-        stakes[msg.sender].lastClaimTimestamp = block.timestamp;
-        stakes[msg.sender].bonusPoints = 0; // Bonuses are claimed above
+    /**
+     * @dev Withdraw HBAR from the player's internal balance.
+     * Follows CEI pattern to prevent reentrancy.
+     */
+    function withdraw(uint256 amount) public {
+        require(userBalances[msg.sender] >= amount, "PlayFi: Insufficient balance");
         
-        // If they empty their stake, reset timestamps. 
-        // Otherwise, keep firstDepositTimestamp to preserve loyalty tier for the remainder.
-        if (stakes[msg.sender].amount == 0) {
-            stakes[msg.sender].lastClaimTimestamp = 0;
-            stakes[msg.sender].firstDepositTimestamp = 0;
+        // Effects
+        userBalances[msg.sender] -= amount;
+        
+        // Interactions
+        (bool success, ) = payable(msg.sender).call{value: amount}("");
+        require(success, "PlayFi: Transfer failed");
+        
+        emit Withdrawn(msg.sender, amount);
+    }
+
+    /**
+     * @dev Backend calls this to settle a game result.
+     */
+    function settleGame(address user, uint256 winAmount, uint256 lossAmount) public onlyAuthorized {
+        if (lossAmount > 0) {
+            require(userBalances[user] >= lossAmount, "PlayFi: User has insufficient balance to cover loss");
+            userBalances[user] -= lossAmount;
+            houseLiquidity += lossAmount;
         }
-
-        totalValueLocked -= _amount;
-
-        emit Withdrawn(msg.sender, _amount);
-
-        // 3. Transfer HBAR
-        (bool success, ) = payable(msg.sender).call{value: _amount}("");
-        require(success, "Withdrawal transfer failed");
+        
+        if (winAmount > 0) {
+            require(address(this).balance >= winAmount, "PlayFi: Vault has insufficient liquidity for payout");
+            userBalances[user] += winAmount;
+            if (houseLiquidity >= winAmount) {
+                houseLiquidity -= winAmount;
+            }
+        }
+        
+        emit GameResult(user, winAmount, lossAmount);
     }
 
-    // Returns the exact HBAR balance a user has staked
-    function balances(address user) external view returns (uint256) {
-        return stakes[user].amount;
+    /**
+     * @dev Fund the house liquidity to cover potential big wins.
+     */
+    function fundHouse() public payable onlyOwner {
+        houseLiquidity += msg.value;
+        emit HouseFunded(msg.value);
     }
 
-    // ============================================
-    // Admin / Treasury Management Functions
-    // ============================================
-
-    // Manual association call just in case constructor fails or token changes
-    function associateVault(address _token) external onlyOwner {
-         (bool success, bytes memory result) = HTS_PRECOMPILE.call(
-            abi.encodeWithSelector(IHederaTokenService.associateToken.selector, address(this), _token)
-        );
-        int32 responseCode = success ? abi.decode(result, (int32)) : int32(22);
-        require(responseCode == 22 || success, "Manual association failed");
+    /**
+     * @dev Withdraw house profits/liquidity.
+     */
+    function withdrawHouse(uint256 amount) public onlyOwner {
+        require(address(this).balance >= amount, "PlayFi: Insufficient vault balance");
+        require(houseLiquidity >= amount, "PlayFi: Insufficient house liquidity");
+        
+        houseLiquidity -= amount;
+        (bool success, ) = payable(owner).call{value: amount}("");
+        require(success, "PlayFi: House transfer failed");
+        
+        emit HouseWithdrawn(amount);
     }
 
-    function adminWithdrawHbar(uint256 amount) external onlyOwner {
-        require(address(this).balance >= amount, "Not enough HBAR in the contract.");
-        (bool success, ) = payable(owner()).call{value: amount}("");
-        require(success, "Admin transfer failed");
-    }
-
-    function adminWithdrawPlay(uint256 amount) external onlyOwner {
-        require(playToken.balanceOf(address(this)) >= amount, "Not enough PLAY in the contract.");
-        playToken.transfer(owner(), amount);
+    /**
+     * @dev Helper to get contract balance.
+     */
+    function getVaultBalance() public view returns (uint256) {
+        return address(this).balance;
     }
 }
