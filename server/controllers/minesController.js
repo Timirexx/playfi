@@ -7,9 +7,9 @@ dotenv.config();
 const activeGames = new Map();
 
 /**
- * 16-Box Star Hunt Logic (4x4 Grid)
+ * 30-Box Star Hunt Logic (6x5 Grid)
  */
-const TOTAL_TILES = 16;
+const TOTAL_TILES = 30;
 
 const calculateMultiplier = (mines, revealed) => {
     if (revealed === 0) return 1.0;
@@ -114,18 +114,20 @@ export const cashoutMines = async (req, res) => {
 
 async function settleVault(userAddress, winAmount, betAmount) {
     try {
-        const gamesAddress = "0x498a44C73397940733a9732512fA13069Bc";
+        const vaultAddress = "0x434BcA79801eB0d0E1838d63B8Bc1FCb09040d28";
         const provider = new ethers.JsonRpcProvider("https://testnet.hashio.io/api");
         const wallet = new ethers.Wallet(process.env.TREASURY_PRIVATE_KEY, provider);
-        const abi = ["function settleResult(address user, uint256 winAmount, uint256 lossAmount) public"];
-        const contract = new ethers.Contract(gamesAddress, abi, wallet);
+        const abi = ["function settleGame(address user, uint256 winAmount, uint256 lossAmount) public"];
+        const contract = new ethers.Contract(vaultAddress, abi, wallet);
 
         const winTiny = ethers.parseUnits(winAmount.toFixed(8), 8);
         const lossTiny = ethers.parseUnits(parseFloat(betAmount).toFixed(8), 8);
 
-        const tx = await contract.settleResult(userAddress, winTiny, lossTiny);
+        // Add gasLimit to avoid Hashio INSUFFICIENT_TX_FEE error
+        const tx = await contract.settleGame(userAddress, winTiny, lossTiny, { gasLimit: 500000 });
         await tx.wait();
     } catch (err) {
         console.error("[MINES] Settlement Error:", err.message);
+        throw err; // Re-throw to be caught by the route handler and returned to frontend
     }
 }

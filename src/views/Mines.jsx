@@ -4,7 +4,7 @@ import { useWallet } from '../context/WalletContext';
 import axios from 'axios';
 import { ethers } from 'ethers';
 import { useAppKitProvider } from '@reown/appkit/react';
-import { PLAYFI_GAMES_ADDRESS, PLAYFI_GAMES_ABI } from '../contracts/PlayFiGames';
+import { PLAYFI_VAULT_ADDRESS, PLAYFI_VAULT_ABI } from '../contracts/PlayFiVault';
 
 // --- MATH UTILS FOR 16-BOX PREVIEW ---
 const factorial = (n) => {
@@ -22,8 +22,8 @@ const nCr = (n, r) => {
 const calculateMultiplier = (mines, revealed) => {
     if (revealed === 0) return 1.0;
     const houseEdge = 0.99;
-    const combinationsTotal = nCr(16, revealed);
-    const combinationsSafe = nCr(16 - mines, revealed);
+    const combinationsTotal = nCr(30, revealed);
+    const combinationsSafe = nCr(30 - mines, revealed);
     return houseEdge * (Number(combinationsTotal) / Number(combinationsSafe));
 };
 
@@ -39,7 +39,7 @@ const Mines = () => {
     const [gameState, setGameState] = useState('idle'); // idle, playing, ended, won
     const [betAmount, setBetAmount] = useState("1");
     const [minesCount, setMinesCount] = useState(3);
-    const [grid, setGrid] = useState(() => Array.from({ length: 16 }, () => ({ status: 'covered' })));
+    const [grid, setGrid] = useState(() => Array.from({ length: 30 }, () => ({ status: 'covered' })));
     const [revealedCount, setRevealedCount] = useState(0);
     const [currentMultiplier, setCurrentMultiplier] = useState(1.0);
     const [loading, setLoading] = useState(false);
@@ -60,14 +60,22 @@ const Mines = () => {
         }));
 
         try {
-            // 1. Trigger the Buy-In Transaction
+            // 1. Check Balance and Trigger Buy-In Deposit to Vault if needed
             const provider = new ethers.BrowserProvider(walletProvider);
             const signer = await provider.getSigner();
-            const contract = new ethers.Contract(PLAYFI_GAMES_ADDRESS, PLAYFI_GAMES_ABI, signer);
+            const vaultContract = new ethers.Contract(PLAYFI_VAULT_ADDRESS, PLAYFI_VAULT_ABI, signer);
 
             const valWei = ethers.parseUnits(betAmount, 18);
-            const tx = await contract.placeBet({ value: valWei });
-            await tx.wait();
+            const userBal = await vaultContract.userBalances(address);
+            
+            if (userBal < valWei) {
+                const diff = valWei - userBal;
+                window.dispatchEvent(new CustomEvent('showTxOverlay', { 
+                    detail: { title: 'Vault Deposit Required', desc: `Depositing ${ethers.formatUnits(diff, 18)} HBAR to your vault to cover the bet...` } 
+                }));
+                const tx = await vaultContract.deposit({ value: diff });
+                await tx.wait();
+            }
 
             // 2. Notify Backend to Start Game
             const res = await axios.post(`${API_BASE}/api/mines/start`, {
@@ -78,7 +86,7 @@ const Mines = () => {
             });
 
             if (res.data.success) {
-                setGrid(Array.from({ length: 16 }, () => ({ status: 'covered' })));
+                setGrid(Array.from({ length: 30 }, () => ({ status: 'covered' })));
                 setRevealedCount(0);
                 setCurrentMultiplier(1.0);
                 setServerSeedHash(res.data.serverSeedHash);
@@ -171,11 +179,11 @@ const Mines = () => {
                 
                 .star-grid { 
                     display: grid !important; 
-                    grid-template-columns: repeat(4, 1fr) !important; 
-                    gap: 12px; 
+                    grid-template-columns: repeat(6, 1fr) !important; 
+                    gap: 10px; 
                     padding: 1rem; 
                     width: 100%; 
-                    max-width: 440px; 
+                    max-width: 500px; 
                     margin: 0 auto;
                 }
                 
@@ -211,7 +219,7 @@ const Mines = () => {
                 <div className="hero-header">
                     <button className="btn" onClick={() => navigate('/')}>&larr; HUB</button>
                     <h2 className="neon-text outline-text">STAR HUNT</h2>
-                    <div className="live-status">16 BOXES</div>
+                    <div className="live-status">30 BOXES</div>
                 </div>
 
                 <div className="star-hunt-layout">
@@ -228,7 +236,7 @@ const Mines = () => {
                         <div className="bet-input-group">
                             <label>BOMBS COUNT</label>
                             <div className="input-wrapper">
-                                <input type="number" value={minesCount} onChange={e => setMinesCount(Math.min(15, parseInt(e.target.value)))} disabled={gameState === 'playing'} />
+                                <input type="number" value={minesCount} onChange={e => setMinesCount(Math.min(29, parseInt(e.target.value) || 1))} disabled={gameState === 'playing'} />
                                 <span className="input-currency">💣</span>
                             </div>
                         </div>
@@ -254,7 +262,7 @@ const Mines = () => {
                         <div className="glass-panel" style={{ padding: '2rem' }}>
                             <p className="text-center" style={{ marginBottom: '1.5rem', fontWeight: 700, letterSpacing: '2px' }}>FIND THE ⭐ STARS</p>
                             <div className="star-grid">
-                                {Array.from({ length: 16 }).map((_, i) => (
+                                {Array.from({ length: 30 }).map((_, i) => (
                                     <div 
                                         key={i} 
                                         className={`star-box ${grid[i]?.status || 'covered'}`}
@@ -273,7 +281,7 @@ const Mines = () => {
                         <div className="mult-sidebar">
                             {Array(8).fill(null).map((_, i) => {
                                 const step = revealedCount + (4 - i);
-                                if (step <= 0 || step > (16 - minesCount)) return null;
+                                if (step <= 0 || step > (30 - minesCount)) return null;
                                 const m = calculateMultiplier(minesCount, step);
                                 return (
                                     <div key={i} className={`star-mult ${step === revealedCount ? 'active' : step === revealedCount + 1 ? 'next' : ''}`}>

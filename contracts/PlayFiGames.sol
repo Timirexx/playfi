@@ -74,7 +74,7 @@ contract PlayFiGames {
     // --- MINES GAME ---
 
     function startMines(uint256 minesCount, uint256 amount) public {
-        require(minesCount >= 1 && minesCount <= 24, "PlayFi: Invalid mines count");
+        require(minesCount >= 1 && minesCount <= 29, "PlayFi: Invalid mines count");
         require(vault.userBalances(msg.sender) >= amount, "PlayFi: Insufficient vault balance");
         require(!activeMinesGames[msg.sender].active, "PlayFi: Game already active");
 
@@ -92,10 +92,10 @@ contract PlayFiGames {
     function revealTile(uint256 tileIndex) public {
         MinesGame storage game = activeMinesGames[msg.sender];
         require(game.active, "PlayFi: No active game");
-        require(tileIndex < 25, "PlayFi: Invalid tile");
+        require(tileIndex < 30, "PlayFi: Invalid tile");
 
         // Determine if tile is a mine using the seed
-        bool isMine = (uint256(keccak256(abi.encodePacked(game.seed, tileIndex))) % 25) < game.minesCount;
+        bool isMine = (uint256(keccak256(abi.encodePacked(game.seed, tileIndex))) % 30) < game.minesCount;
 
         if (isMine) {
             // User lost
@@ -107,7 +107,7 @@ contract PlayFiGames {
             emit MinesRevealed(msg.sender, tileIndex, false);
             
             // Auto-cashout if all safe tiles revealed
-            if (game.revealedCount == (25 - game.minesCount)) {
+            if (game.revealedCount == (30 - game.minesCount)) {
                 cashoutMines();
             }
         }
@@ -127,12 +127,12 @@ contract PlayFiGames {
     }
 
     function calculateMinesPayout(uint256 bet, uint256 mines, uint256 revealed) public pure returns (uint256) {
-        // Simplified multiplier logic: (25 / (25 - mines)) ^ revealed
+        // Simplified multiplier logic: (30 / (30 - mines)) ^ revealed
         // For a smart contract, we use a fixed-point approximation or a simple table
         // Here we'll use a basic increasing scale for demonstration
         uint256 multiplier = 100; // 1.00x base in percentage
         for(uint256 i = 0; i < revealed; i++) {
-            multiplier = (multiplier * 25) / (25 - mines);
+            multiplier = (multiplier * 30) / (30 - mines);
         }
         return (bet * multiplier) / 100;
     }
