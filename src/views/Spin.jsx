@@ -106,7 +106,7 @@ const Spin = () => {
             const contract = new ethers.Contract(PLAYFI_GAMES_ADDRESS, PLAYFI_GAMES_ABI, signer);
 
             const valWei = ethers.parseUnits(betAmount, 18);
-            const tx = await contract.placeBet("spin", { value: valWei });
+            const tx = await contract.placeBet({ value: valWei });
             await tx.wait();
 
             // 2. Fetch result from backend

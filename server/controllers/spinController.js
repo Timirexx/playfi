@@ -48,7 +48,34 @@ export const handleSpin = async (req, res) => {
     console.log(`[SPIN] Request from ${userAddress} | Tx: ${transactionId} | Prediction: ${prediction}`);
 
     try {
-    try {
+        // 1. IDEMPOTENCY CHECK
+        if (processedTransactions.has(transactionId)) {
+            return res.status(400).json({ success: false, error: "Transaction already processed." });
+        }
+
+        // 2. TRANSACTION VERIFICATION (Mirror Node)
+        const formattedId = transactionId.replace("@", "-").replace(".", "-");
+        const mirrorNodeUrl = `https://testnet.mirrornode.hedera.com/api/v1/transactions/${formattedId}`;
+        
+        const response = await axios.get(mirrorNodeUrl);
+        const txData = response.data.transactions[0];
+
+        if (!txData || txData.result !== "SUCCESS") {
+            return res.status(400).json({ success: false, error: "Invalid transaction or pending confirmation." });
+        }
+
+        // Verify 1 HBAR transfer to Treasury
+        const treasuryTransfer = txData.transfers.find(
+            t => t.account === process.env.TREASURY_ACCOUNT_ID && t.amount === 100000000
+        );
+
+        if (!treasuryTransfer) {
+            return res.status(400).json({ success: false, error: "Incorrect payment amount or recipient." });
+        }
+
+        // Mark as processed
+        processedTransactions.add(transactionId);
+
         // 3. GENERATE RESULT
         const landedMultiplier = getLandedMultiplier();
         const isWin = (landedMultiplier === prediction);
@@ -63,14 +90,14 @@ export const handleSpin = async (req, res) => {
         // 5. CONTRACT SETTLEMENT
         let payoutTransactionId = null;
         try {
-            const vaultAddress = "0x699d083C0516401B1C8Ed1e26A2382D9af9eD911";
+            const gamesAddress = "0x498a44C73397940733a9732512fA13069Bc";
             const provider = new ethers.JsonRpcProvider("https://testnet.hashio.io/api");
             const wallet = new ethers.Wallet(process.env.TREASURY_PRIVATE_KEY, provider);
             
             const abi = [
-                "function settleGame(address user, uint256 winAmount, uint256 lossAmount) public"
+                "function settleResult(address user, uint256 winAmount, uint256 lossAmount) public"
             ];
-            const contract = new ethers.Contract(vaultAddress, abi, wallet);
+            const contract = new ethers.Contract(gamesAddress, abi, wallet);
 
             const multiplierValue = parseInt(landedMultiplier.replace("x", ""));
             const winAmountTiny = isWin ? ethers.parseUnits(multiplierValue.toString(), 8) : 0;
@@ -78,7 +105,7 @@ export const handleSpin = async (req, res) => {
 
             console.log(`[SPIN] Settling contract: Win=${multiplierValue}x | Loss=1x`);
             
-            const tx = await contract.settleGame(userAddress, winAmountTiny, lossAmountTiny, { gasLimit: 500000 });
+            const tx = await contract.settleResult(userAddress, winAmountTiny, lossAmountTiny);
             await tx.wait();
             payoutTransactionId = tx.hash;
 
