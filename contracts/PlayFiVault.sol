@@ -10,9 +10,6 @@ pragma solidity ^0.8.20;
 contract PlayFiVault {
     address public owner;
     
-    // Internal balances mapping: user address => balance in tinybars
-    mapping(address => uint256) public userBalances;
-    
     // Total liquidity provided by the house
     uint256 public houseLiquidity;
 
@@ -43,48 +40,23 @@ contract PlayFiVault {
     }
 
     /**
-     * @dev Deposit HBAR into the player's internal balance.
-     * Rewards (10 Stars per 1 HBAR) are handled on the frontend for immediate feedback.
+     * @dev Authorized games send user bets here.
      */
-    function deposit() public payable {
-        require(msg.value > 0, "PlayFi: Deposit amount must be greater than 0");
-        userBalances[msg.sender] += msg.value;
-        emit Deposited(msg.sender, msg.value);
+    function receiveBet() public payable onlyAuthorized {
+        houseLiquidity += msg.value;
     }
 
     /**
-     * @dev Withdraw HBAR from the player's internal balance.
-     * Follows CEI pattern to prevent reentrancy.
-     */
-    function withdraw(uint256 amount) public {
-        require(userBalances[msg.sender] >= amount, "PlayFi: Insufficient balance");
-        
-        // Effects
-        userBalances[msg.sender] -= amount;
-        
-        // Interactions
-        (bool success, ) = payable(msg.sender).call{value: amount}("");
-        require(success, "PlayFi: Transfer failed");
-        
-        emit Withdrawn(msg.sender, amount);
-    }
-
-    /**
-     * @dev Backend calls this to settle a game result.
+     * @dev Backend calls this to settle a game result and send winnings directly.
      */
     function settleGame(address user, uint256 winAmount, uint256 lossAmount) public onlyAuthorized {
-        if (lossAmount > 0) {
-            require(userBalances[user] >= lossAmount, "PlayFi: User has insufficient balance to cover loss");
-            userBalances[user] -= lossAmount;
-            houseLiquidity += lossAmount;
-        }
-        
         if (winAmount > 0) {
             require(address(this).balance >= winAmount, "PlayFi: Vault has insufficient liquidity for payout");
-            userBalances[user] += winAmount;
             if (houseLiquidity >= winAmount) {
                 houseLiquidity -= winAmount;
             }
+            (bool success, ) = payable(user).call{value: winAmount}("");
+            require(success, "PlayFi: Payout transfer failed");
         }
         
         emit GameResult(user, winAmount, lossAmount);

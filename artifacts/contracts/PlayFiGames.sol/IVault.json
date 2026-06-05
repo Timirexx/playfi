@@ -4,6 +4,13 @@
   "sourceName": "contracts/PlayFiGames.sol",
   "abi": [
     {
+      "inputs": [],
+      "name": "receiveBet",
+      "outputs": [],
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
       "inputs": [
         {
           "internalType": "address",
@@ -25,25 +32,6 @@
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "user",
-          "type": "address"
-        }
-      ],
-      "name": "userBalances",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
     }
   ],
   "bytecode": "0x",
@@ -52,5 +40,5 @@
   "deployedLinkReferences": {},
   "immutableReferences": {},
   "inputSourceName": "project/contracts/PlayFiGames.sol",
-  "buildInfoId": "solc-0_8_20-716cba37d966ed315aa86d12225d9d789e7cff1e"
+  "buildInfoId": "solc-0_8_20-f50e7b734e5217d82884aaab15d40e6014da97c3"
 }

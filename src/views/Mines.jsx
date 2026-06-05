@@ -4,7 +4,7 @@ import { useWallet } from '../context/WalletContext';
 import axios from 'axios';
 import { ethers } from 'ethers';
 import { useAppKitProvider } from '@reown/appkit/react';
-import { PLAYFI_VAULT_ADDRESS, PLAYFI_VAULT_ABI } from '../contracts/PlayFiVault';
+import { PLAYFI_GAMES_ADDRESS, PLAYFI_GAMES_ABI } from '../contracts/PlayFiGames';
 
 // --- MATH UTILS FOR 16-BOX PREVIEW ---
 const factorial = (n) => {
@@ -60,22 +60,14 @@ const Mines = () => {
         }));
 
         try {
-            // 1. Check Balance and Trigger Buy-In Deposit to Vault if needed
+            // 1. Send Bet Directly to Games Treasury
             const provider = new ethers.BrowserProvider(walletProvider);
             const signer = await provider.getSigner();
-            const vaultContract = new ethers.Contract(PLAYFI_VAULT_ADDRESS, PLAYFI_VAULT_ABI, signer);
+            const contract = new ethers.Contract(PLAYFI_GAMES_ADDRESS, PLAYFI_GAMES_ABI, signer);
 
             const valWei = ethers.parseUnits(betAmount, 18);
-            const userBal = await vaultContract.userBalances(address);
-            
-            if (userBal < valWei) {
-                const diff = valWei - userBal;
-                window.dispatchEvent(new CustomEvent('showTxOverlay', { 
-                    detail: { title: 'Vault Deposit Required', desc: `Depositing ${ethers.formatUnits(diff, 18)} HBAR to your vault to cover the bet...` } 
-                }));
-                const tx = await vaultContract.deposit({ value: diff });
-                await tx.wait();
-            }
+            const tx = await contract.placeBet("mines", { value: valWei });
+            await tx.wait();
 
             // 2. Notify Backend to Start Game
             const res = await axios.post(`${API_BASE}/api/mines/start`, {

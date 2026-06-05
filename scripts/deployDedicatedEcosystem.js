@@ -80,25 +80,15 @@ async function main() {
 
     const vaultConfigContent = `export const PLAYFI_VAULT_ADDRESS = "${vaultAddress}";
 export const PLAYFI_VAULT_ABI = [
-    "function deposit() public payable",
-    "function withdraw(uint256 amount) public",
-    "function userBalances(address) public view returns (uint256)",
-    "function settleGame(address user, uint256 winAmount, uint256 lossAmount) public",
-    "event Deposited(address indexed user, uint256 amount)",
-    "event Withdrawn(address indexed user, uint256 amount)"
+    "function receiveBet() public payable",
+    "function settleGame(address user, uint256 winAmount, uint256 lossAmount) public"
 ];
 `;
 
     const gamesConfigContent = `export const PLAYFI_GAMES_ADDRESS = "${gamesAddress}";
 export const PLAYFI_GAMES_ABI = [
-    "function startMines(uint256 minesCount, uint256 amount) public",
-    "function revealTile(uint256 tileIndex) public",
-    "function cashoutMines() public",
-    "function playSpin(uint256 amount) public",
-    "event SpinPlayed(address indexed user, uint256 bet, uint256 multiplier, uint256 winAmount)",
-    "event MinesStarted(address indexed user, uint256 bet, uint256 minesCount)",
-    "event MinesRevealed(address indexed user, uint256 tileIndex, bool isMine)",
-    "event MinesCashout(address indexed user, uint256 payout)"
+    "function placeBet(string memory game) public payable",
+    "event BetPlaced(address indexed user, string game, uint256 amount)"
 ];
 `;
 
