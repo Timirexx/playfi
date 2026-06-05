@@ -93,7 +93,7 @@ const Mines = () => {
                 setGameState('playing');
                 updateStarPoints(10); // Star Bonus!
                 window.dispatchEvent(new CustomEvent('showToast', { 
-                    detail: { message: `Wager Confirmed! Good Luck ⭐`, type: 'success' } 
+                    detail: { message: `Wager Confirmed! Good Luck 🎁`, type: 'success' } 
                 }));
             }
         } catch (err) {
@@ -163,10 +163,10 @@ const Mines = () => {
                     if (isMine) newGrid[i] = { status: isMine ? 'mine' : 'revealed_empty' };
                 });
                 setGrid(newGrid);
-                window.dispatchEvent(new CustomEvent('showToast', { detail: { message: `Reward Claimed: ${res.data.winAmount.toFixed(2)} HBAR!`, type: 'success' } }));
+                window.dispatchEvent(new CustomEvent('showToast', { detail: { message: `LOOT SECURED: ${res.data.winAmount.toFixed(2)} HBAR!`, type: 'success' } }));
             }
         } catch (err) {
-            window.dispatchEvent(new CustomEvent('showToast', { detail: { message: 'Claim failed', type: 'error' } }));
+            window.dispatchEvent(new CustomEvent('showToast', { detail: { message: 'Cash Out failed', type: 'error' } }));
         } finally {
             setLoading(false);
         }
@@ -189,21 +189,55 @@ const Mines = () => {
                 
                 .star-box {
                     aspect-ratio: 1 / 1; 
-                    background: rgba(255, 255, 255, 0.07); 
-                    border: 1px solid rgba(0, 240, 255, 0.3);
-                    border-radius: 12px; 
+                    background: rgba(10, 15, 25, 0.8); 
+                    border: 1px solid rgba(0, 240, 255, 0.2);
+                    border-radius: 8px; 
                     cursor: pointer; 
-                    transition: all 0.2s ease;
+                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                     display: flex; 
                     align-items: center; 
                     justify-content: center; 
                     font-size: 2rem;
-                    min-height: 60px;
+                    min-height: 50px;
+                    box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+                    position: relative;
+                    overflow: hidden;
                 }
-                .star-box:hover:not(.revealed) { background: rgba(0, 240, 255, 0.1); border-color: var(--neon-blue); transform: scale(1.05); }
-                .star-box.star { background: rgba(0, 240, 255, 0.15); border-color: var(--neon-blue); box-shadow: 0 0 20px var(--neon-blue-glow); cursor: default; }
-                .star-box.mine { background: rgba(255, 51, 102, 0.2); border-color: var(--danger); }
-                .star-box.revealed_empty { opacity: 0.2; cursor: default; }
+                .star-box::before {
+                    content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+                    background: linear-gradient(45deg, transparent, rgba(0, 240, 255, 0.1), transparent);
+                    transform: rotate(45deg); transition: 0.5s; opacity: 0;
+                }
+                .star-box:hover:not(.revealed) { 
+                    background: rgba(20, 30, 45, 0.9); 
+                    border-color: var(--neon-blue); 
+                    transform: translateY(-2px); 
+                    box-shadow: 0 5px 15px rgba(0, 240, 255, 0.2);
+                }
+                .star-box:hover:not(.revealed)::before { opacity: 1; }
+                .star-box.star { 
+                    background: rgba(0, 240, 255, 0.15); 
+                    border-color: var(--neon-blue); 
+                    box-shadow: 0 0 20px var(--neon-blue-glow), inset 0 0 15px rgba(0, 240, 255, 0.3); 
+                    cursor: default; 
+                    animation: flashBlue 0.5s ease-out;
+                }
+                .star-box.mine { 
+                    background: rgba(255, 51, 102, 0.2); 
+                    border-color: var(--danger); 
+                    box-shadow: 0 0 20px rgba(255, 51, 102, 0.5), inset 0 0 15px rgba(255, 51, 102, 0.3);
+                    animation: flashRed 0.5s ease-out;
+                }
+                .star-box.revealed_empty { opacity: 0.3; cursor: default; filter: grayscale(100%); }
+
+                @keyframes flashBlue {
+                    0% { background: rgba(0, 240, 255, 0.8); transform: scale(1.1); }
+                    100% { background: rgba(0, 240, 255, 0.15); transform: scale(1); }
+                }
+                @keyframes flashRed {
+                    0% { background: rgba(255, 51, 102, 0.8); transform: scale(1.1); }
+                    100% { background: rgba(255, 51, 102, 0.2); transform: scale(1); }
+                }
 
                 .mult-sidebar { max-height: 450px; overflow-y: auto; padding-right: 5px; }
                 .star-mult { 
@@ -234,7 +268,7 @@ const Mines = () => {
                         </div>
 
                         <div className="bet-input-group">
-                            <label>BOMBS COUNT</label>
+                            <label>HAZARD RISK</label>
                             <div className="input-wrapper">
                                 <input type="number" value={minesCount} onChange={e => setMinesCount(Math.min(29, parseInt(e.target.value) || 1))} disabled={gameState === 'playing'} />
                                 <span className="input-currency">💣</span>
@@ -243,11 +277,11 @@ const Mines = () => {
 
                         {gameState === 'playing' ? (
                             <button className="btn btn-hero btn-glow" onClick={handleCashout} disabled={loading || revealedCount === 0} style={{ background: 'var(--success)', color: '#000' }}>
-                                {loading ? 'WAIT...' : `STOP & CLAIM (${(parseFloat(betAmount) * currentMultiplier).toFixed(2)})`}
+                                {loading ? 'WAIT...' : `CASH OUT (${(parseFloat(betAmount) * currentMultiplier).toFixed(2)})`}
                             </button>
                         ) : (
                             <button className="btn btn-hero btn-glow" onClick={startGame} disabled={loading}>
-                                {loading ? 'OPENING BOARD...' : 'START HUNT'}
+                                {loading ? 'OPENING BOARD...' : 'START GAME'}
                             </button>
                         )}
 
@@ -260,7 +294,7 @@ const Mines = () => {
                     {/* GRID */}
                     <div className="game-area">
                         <div className="glass-panel" style={{ padding: '2rem' }}>
-                            <p className="text-center" style={{ marginBottom: '1.5rem', fontWeight: 700, letterSpacing: '2px' }}>FIND THE ⭐ STARS</p>
+                            <p className="text-center" style={{ marginBottom: '1.5rem', fontWeight: 700, letterSpacing: '2px' }}>FIND THE 🎁 FORTUNE BOXES</p>
                             <div className="star-grid">
                                 {Array.from({ length: 30 }).map((_, i) => (
                                     <div 
@@ -268,7 +302,7 @@ const Mines = () => {
                                         className={`star-box ${grid[i]?.status || 'covered'}`}
                                         onClick={() => handleCellClick(i)}
                                     >
-                                        {grid[i]?.status === 'star' ? '⭐' : grid[i]?.status === 'mine' ? '💣' : ''}
+                                        {grid[i]?.status === 'star' ? '🎁' : grid[i]?.status === 'mine' ? '💣' : ''}
                                     </div>
                                 ))}
                             </div>
@@ -285,7 +319,7 @@ const Mines = () => {
                                 const m = calculateMultiplier(minesCount, step);
                                 return (
                                     <div key={i} className={`star-mult ${step === revealedCount ? 'active' : step === revealedCount + 1 ? 'next' : ''}`}>
-                                        <span>{step} ⭐</span>
+                                        <span>{step} 🎁</span>
                                         <span>{m.toFixed(2)}x</span>
                                     </div>
                                 );
