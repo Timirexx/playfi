@@ -33,7 +33,7 @@ const Mines = () => {
     const { walletProvider } = useAppKitProvider('eip155');
     
     // API Config
-    const API_BASE = window.location.hostname === 'localhost' ? "http://localhost:3001" : "https://playfi-backend.vercel.app";
+    const API_BASE = window.location.hostname === 'localhost' ? "http://localhost:3001" : "https://server-chi-rose-76.vercel.app";
 
     // Game State
     const [gameState, setGameState] = useState('idle'); // idle, playing, ended, won

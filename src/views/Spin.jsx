@@ -31,6 +31,8 @@ const Spin = () => {
         '40x': '#ffffff'
     };
 
+    const API_BASE = window.location.hostname === 'localhost' ? "http://localhost:3001" : "https://server-chi-rose-76.vercel.app";
+
     const drawWheel = useCallback((rotation = 0) => {
         const canvas = canvasRef.current;
         if (!canvas) return;
