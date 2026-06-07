@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useWallet } from '../context/WalletContext';
 import { ethers } from 'ethers';
 import { useAppKitProvider } from '@reown/appkit/react';
-import { PLAYFI_GAMES_ADDRESS, PLAYFI_GAMES_ABI } from '../contracts/PlayFiGames';
+import { GAME_TREASURY_ADDRESS, GAME_TREASURY_ABI } from '../contracts/GameTreasury';
 
 const Spin = () => {
     const navigate = useNavigate();
@@ -105,11 +105,16 @@ const Spin = () => {
             // 1. On-Chain Buy-In
             const provider = new ethers.BrowserProvider(walletProvider);
             const signer = await provider.getSigner();
-            const contract = new ethers.Contract(PLAYFI_GAMES_ADDRESS, PLAYFI_GAMES_ABI, signer);
+            const vaultContract = new ethers.Contract(GAME_TREASURY_ADDRESS, GAME_TREASURY_ABI, signer);
 
             const valWei = ethers.parseUnits(betAmount, 18);
-            const tx = await contract.placeBet({ value: valWei });
-            await tx.wait();
+            const userBal = await vaultContract.userBalances(address);
+            
+            if (userBal < valWei) {
+                const diff = valWei - userBal;
+                const tx = await vaultContract.deposit({ value: diff });
+                await tx.wait();
+            }
 
             // 2. Fetch result from backend
             const response = await fetch('/api/spin', {

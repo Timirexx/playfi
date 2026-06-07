@@ -90,24 +90,23 @@ export const handleSpin = async (req, res) => {
         // 5. CONTRACT SETTLEMENT
         let payoutTransactionId = null;
         try {
-            const gamesAddress = "0x498a44C73397940733a9732512fA13069Bc";
+            const gamesAddress = "0x99f94e0fB148727e7C69D0021a602bfb817E52eB";
             const provider = new ethers.JsonRpcProvider("https://testnet.hashio.io/api");
             const wallet = new ethers.Wallet(process.env.TREASURY_PRIVATE_KEY, provider);
             
             const abi = [
-                "function settleResult(address user, uint256 winAmount, uint256 lossAmount) public"
+                "function settleGame(address user, uint256 winAmount, uint256 lossAmount) public"
             ];
             const contract = new ethers.Contract(gamesAddress, abi, wallet);
-
-            const multiplierValue = parseInt(landedMultiplier.replace("x", ""));
-            const winAmountTiny = isWin ? ethers.parseUnits(multiplierValue.toString(), 8) : 0;
-            const lossAmountTiny = ethers.parseUnits("1", 8); // 1 HBAR bet
-
-            console.log(`[SPIN] Settling contract: Win=${multiplierValue}x | Loss=1x`);
             
-            const tx = await contract.settleResult(userAddress, winAmountTiny, lossAmountTiny);
-            await tx.wait();
-            payoutTransactionId = tx.hash;
+            const multiplierValue = parseInt(landedMultiplier.replace("x", ""));
+            const winTiny = isWin ? ethers.parseUnits((1 * multiplierValue).toFixed(8), 8) : 0n;
+            const lossTiny = ethers.parseUnits("1", 8); // Spin bet is always 1 HBAR currently
+            
+            // Fire and forget
+            contract.settleGame(userAddress, winTiny, lossTiny, { gasLimit: 500000 })
+                .then(tx => tx.wait().catch(err => console.error("Settlement Confirm Error:", err)))
+                .catch(err => console.error("Settlement Submit Error:", err));
 
         } catch (contractErr) {
             console.error("[SPIN] Contract Settlement Error:", contractErr.message);

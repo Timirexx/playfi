@@ -4,7 +4,7 @@ import { useWallet } from '../context/WalletContext';
 import axios from 'axios';
 import { ethers } from 'ethers';
 import { useAppKitProvider } from '@reown/appkit/react';
-import { PLAYFI_VAULT_ADDRESS, PLAYFI_VAULT_ABI } from '../contracts/PlayFiVault';
+import { GAME_TREASURY_ADDRESS, GAME_TREASURY_ABI } from '../contracts/GameTreasury';
 
 // --- MATH UTILS FOR 16-BOX PREVIEW ---
 const factorial = (n) => {
@@ -63,7 +63,7 @@ const Mines = () => {
             // 1. Check Balance and Trigger Buy-In Deposit to Vault if needed
             const provider = new ethers.BrowserProvider(walletProvider);
             const signer = await provider.getSigner();
-            const vaultContract = new ethers.Contract(PLAYFI_VAULT_ADDRESS, PLAYFI_VAULT_ABI, signer);
+            const vaultContract = new ethers.Contract(GAME_TREASURY_ADDRESS, GAME_TREASURY_ABI, signer);
 
             const valWei = ethers.parseUnits(betAmount, 18);
             const userBal = await vaultContract.userBalances(address);
