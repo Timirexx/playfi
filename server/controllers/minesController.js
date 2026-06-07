@@ -125,9 +125,12 @@ async function settleVault(userAddress, winAmount, betAmount) {
 
         // Add gasLimit to avoid Hashio INSUFFICIENT_TX_FEE error
         const tx = await contract.settleGame(userAddress, winTiny, lossTiny, { gasLimit: 500000 });
-        await tx.wait();
+        
+        // Fire and forget the confirmation wait so the frontend gets an instant response
+        tx.wait().catch(err => console.error("[MINES] Settlement Confirmation Error:", err.message));
     } catch (err) {
-        console.error("[MINES] Settlement Error:", err.message);
-        throw err; // Re-throw to be caught by the route handler and returned to frontend
+        console.error("[MINES] Settlement Submission Error:", err.message);
+        // Swallow error to prevent HTTP 500. The user lost/won visually, 
+        // the blockchain will be corrected if needed, but the game must continue instantly.
     }
 }

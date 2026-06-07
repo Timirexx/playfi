@@ -121,10 +121,23 @@ const Mines = () => {
                 const newGrid = [...grid];
                 if (res.data.status === 'bomb') {
                     res.data.grid.forEach((isMine, i) => {
-                        newGrid[i] = { status: isMine ? 'mine' : 'revealed_empty' };
+                        if (i === index) {
+                            newGrid[i] = { status: 'mine_clicked' };
+                        } else {
+                            newGrid[i] = { status: isMine ? 'mine_revealed' : 'star_revealed' };
+                        }
                     });
                     setGameState('ended');
                     window.dispatchEvent(new CustomEvent('showToast', { detail: { message: '💣 BOMB! You lost.', type: 'error' } }));
+                    
+                    // Auto-reset after 3 seconds
+                    setTimeout(() => {
+                        setGrid(Array.from({ length: 30 }, () => ({ status: 'covered' })));
+                        setRevealedCount(0);
+                        setCurrentMultiplier(1.0);
+                        setGameState('idle');
+                        setServerSeedHash('');
+                    }, 3000);
                 } else {
                     newGrid[index] = { status: 'star' };
                     setRevealedCount(prev => prev + 1);
@@ -133,9 +146,18 @@ const Mines = () => {
                     if (res.data.status === 'victory') {
                         setGameState('won');
                         res.data.grid.forEach((isMine, i) => {
-                            if (isMine) newGrid[i] = { status: 'mine' };
+                            if (isMine) newGrid[i] = { status: 'mine_revealed' };
                         });
                         window.dispatchEvent(new CustomEvent('showToast', { detail: { message: `PERFECT SCORE!`, type: 'success' } }));
+                        
+                        // Auto-reset after 3 seconds
+                        setTimeout(() => {
+                            setGrid(Array.from({ length: 30 }, () => ({ status: 'covered' })));
+                            setRevealedCount(0);
+                            setCurrentMultiplier(1.0);
+                            setGameState('idle');
+                            setServerSeedHash('');
+                        }, 3000);
                     }
                 }
                 setGrid(newGrid);
@@ -160,10 +182,20 @@ const Mines = () => {
                 setGameState('won');
                 const newGrid = [...grid];
                 res.data.grid.forEach((isMine, i) => {
-                    if (isMine) newGrid[i] = { status: isMine ? 'mine' : 'revealed_empty' };
+                    if (isMine) newGrid[i] = { status: 'mine_revealed' };
+                    else if (newGrid[i].status !== 'star') newGrid[i] = { status: 'star_revealed' };
                 });
                 setGrid(newGrid);
                 window.dispatchEvent(new CustomEvent('showToast', { detail: { message: `LOOT SECURED: ${res.data.winAmount.toFixed(2)} HBAR!`, type: 'success' } }));
+                
+                // Auto-reset after 3 seconds
+                setTimeout(() => {
+                    setGrid(Array.from({ length: 30 }, () => ({ status: 'covered' })));
+                    setRevealedCount(0);
+                    setCurrentMultiplier(1.0);
+                    setGameState('idle');
+                    setServerSeedHash('');
+                }, 3000);
             }
         } catch (err) {
             window.dispatchEvent(new CustomEvent('showToast', { detail: { message: 'Cash Out failed', type: 'error' } }));
@@ -222,13 +254,25 @@ const Mines = () => {
                     cursor: default; 
                     animation: flashBlue 0.5s ease-out;
                 }
-                .star-box.mine { 
+                .star-box.mine_clicked { 
                     background: rgba(255, 51, 102, 0.2); 
                     border-color: var(--danger); 
                     box-shadow: 0 0 20px rgba(255, 51, 102, 0.5), inset 0 0 15px rgba(255, 51, 102, 0.3);
                     animation: flashRed 0.5s ease-out;
+                    cursor: default;
                 }
-                .star-box.revealed_empty { opacity: 0.3; cursor: default; filter: grayscale(100%); }
+                .star-box.mine_revealed { 
+                    background: rgba(255, 51, 102, 0.05); 
+                    border-color: rgba(255, 51, 102, 0.3); 
+                    opacity: 0.6;
+                    cursor: default;
+                }
+                .star-box.star_revealed { 
+                    background: rgba(0, 240, 255, 0.05); 
+                    border-color: rgba(0, 240, 255, 0.2); 
+                    opacity: 0.6;
+                    cursor: default;
+                }
 
                 @keyframes flashBlue {
                     0% { background: rgba(0, 240, 255, 0.8); transform: scale(1.1); }
@@ -302,7 +346,8 @@ const Mines = () => {
                                         className={`star-box ${grid[i]?.status || 'covered'}`}
                                         onClick={() => handleCellClick(i)}
                                     >
-                                        {grid[i]?.status === 'star' ? '🎁' : grid[i]?.status === 'mine' ? '💣' : ''}
+                                        {(grid[i]?.status === 'star' || grid[i]?.status === 'star_revealed') ? '🎁' : 
+                                         (grid[i]?.status === 'mine_clicked' || grid[i]?.status === 'mine_revealed') ? '💣' : ''}
                                     </div>
                                 ))}
                             </div>
