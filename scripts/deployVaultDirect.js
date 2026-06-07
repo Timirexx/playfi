@@ -54,7 +54,7 @@ async function main() {
     // 2. Deploy
     console.log("⏳ Deploying to Hedera Testnet via Hashio...");
     const factory = new ethers.ContractFactory(abi, bytecode, wallet);
-    const contract = await factory.deploy();
+    const contract = await factory.deploy({ gasLimit: 5000000 });
 
     await contract.waitForDeployment();
     const address = await contract.getAddress();

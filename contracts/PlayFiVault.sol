@@ -81,10 +81,13 @@ contract PlayFiVault {
         
         if (winAmount > 0) {
             require(address(this).balance >= winAmount, "PlayFi: Vault has insufficient liquidity for payout");
-            userBalances[user] += winAmount;
             if (houseLiquidity >= winAmount) {
                 houseLiquidity -= winAmount;
             }
+            
+            // Transfer directly to the user's wallet instead of adding to userBalances
+            (bool success, ) = payable(user).call{value: winAmount}("");
+            require(success, "PlayFi: Transfer failed");
         }
         
         emit GameResult(user, winAmount, lossAmount);

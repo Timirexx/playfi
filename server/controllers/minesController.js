@@ -114,7 +114,7 @@ export const cashoutMines = async (req, res) => {
 
 async function settleVault(userAddress, winAmount, betAmount) {
     try {
-        const vaultAddress = "0x434BcA79801eB0d0E1838d63B8Bc1FCb09040d28";
+        const vaultAddress = "0xAc7829fE9997C5112CA88C1f743948767f8814C1";
         const provider = new ethers.JsonRpcProvider("https://testnet.hashio.io/api");
         const wallet = new ethers.Wallet(process.env.TREASURY_PRIVATE_KEY, provider);
         const abi = ["function settleGame(address user, uint256 winAmount, uint256 lossAmount) public"];

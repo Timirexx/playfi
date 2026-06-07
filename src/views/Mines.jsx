@@ -29,7 +29,7 @@ const calculateMultiplier = (mines, revealed) => {
 
 const Mines = () => {
     const navigate = useNavigate();
-    const { isConnected, address, updateStarPoints } = useWallet();
+    const { isConnected, address, updateStarPoints, refreshBalance } = useWallet();
     const { walletProvider } = useAppKitProvider('eip155');
     
     // API Config
@@ -157,6 +157,7 @@ const Mines = () => {
                             setCurrentMultiplier(1.0);
                             setGameState('idle');
                             setServerSeedHash('');
+                            refreshBalance();
                         }, 3000);
                     }
                 }
@@ -195,6 +196,7 @@ const Mines = () => {
                     setCurrentMultiplier(1.0);
                     setGameState('idle');
                     setServerSeedHash('');
+                    refreshBalance();
                 }, 3000);
             }
         } catch (err) {
