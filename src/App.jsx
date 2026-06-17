@@ -7,6 +7,7 @@ import Vault from './views/Vault';
 import Mines from './views/Mines';
 import Spin from './views/Spin';
 import Leaderboard from './views/Leaderboard';
+import TwoDoors from './views/TwoDoors';
 import ToastContainer from './components/ui/ToastContainer';
 import TxOverlay from './components/ui/TxOverlay';
 
@@ -23,6 +24,7 @@ const App = () => {
             <Route path="/vault" element={<Vault />} />
             <Route path="/mines" element={<Mines />} />
             <Route path="/spin" element={<Spin />} />
+            <Route path="/two-doors" element={<TwoDoors />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>

@@ -35,6 +35,14 @@ const GameTabs = () => {
         </NavLink>
 
         <NavLink 
+          to="/two-doors" 
+          className={({ isActive }) => `tab-item ${isActive ? 'active' : ''}`}
+        >
+          <span className="tab-icon">🚪</span>
+          <span className="tab-text">Two Doors</span>
+        </NavLink>
+
+        <NavLink 
           to="/leaderboard" 
           className={({ isActive }) => `tab-item ${isActive ? 'active' : ''}`}
         >
