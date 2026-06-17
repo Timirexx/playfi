@@ -66,16 +66,8 @@ const Mines = () => {
             const vaultContract = new ethers.Contract(GAME_TREASURY_ADDRESS, GAME_TREASURY_ABI, signer);
 
             const valWei = ethers.parseUnits(betAmount, 18);
-            const userBal = await vaultContract.userBalances(address);
-            
-            if (userBal < valWei) {
-                const diff = valWei - userBal;
-                window.dispatchEvent(new CustomEvent('showTxOverlay', { 
-                    detail: { title: 'Vault Deposit Required', desc: `Depositing ${ethers.formatUnits(diff, 18)} HBAR to your vault to cover the bet...` } 
-                }));
-                const tx = await vaultContract.deposit({ value: diff });
-                await tx.wait();
-            }
+            const tx = await vaultContract.placeBet({ value: valWei });
+            await tx.wait();
 
             // 2. Notify Backend to Start Game
             const res = await axios.post(`${API_BASE}/api/mines/start`, {

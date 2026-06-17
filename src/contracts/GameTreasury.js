@@ -1,4 +1,4 @@
-export const GAME_TREASURY_ADDRESS = "0x99f94e0fB148727e7C69D0021a602bfb817E52eB";
+export const GAME_TREASURY_ADDRESS = "0x83F2DAEE3765ffEFdD02812E96d23Bb293ae0EAF";
 export const GAME_TREASURY_ABI = [
   {
     "inputs": [],
@@ -21,7 +21,7 @@ export const GAME_TREASURY_ABI = [
         "type": "uint256"
       }
     ],
-    "name": "Deposited",
+    "name": "BetPlaced",
     "type": "event"
   },
   {
@@ -37,12 +37,6 @@ export const GAME_TREASURY_ABI = [
         "indexed": false,
         "internalType": "uint256",
         "name": "won",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "lost",
         "type": "uint256"
       }
     ],
@@ -76,25 +70,6 @@ export const GAME_TREASURY_ABI = [
     "type": "event"
   },
   {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "user",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      }
-    ],
-    "name": "Withdrawn",
-    "type": "event"
-  },
-  {
     "inputs": [
       {
         "internalType": "address",
@@ -111,13 +86,6 @@ export const GAME_TREASURY_ABI = [
       }
     ],
     "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "deposit",
-    "outputs": [],
-    "stateMutability": "payable",
     "type": "function"
   },
   {
@@ -167,6 +135,13 @@ export const GAME_TREASURY_ABI = [
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "placeBet",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
         "internalType": "address",
@@ -195,46 +170,9 @@ export const GAME_TREASURY_ABI = [
         "internalType": "uint256",
         "name": "winAmount",
         "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "lossAmount",
-        "type": "uint256"
       }
     ],
     "name": "settleGame",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "name": "userBalances",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      }
-    ],
-    "name": "withdraw",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

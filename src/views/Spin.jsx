@@ -108,13 +108,10 @@ const Spin = () => {
             const vaultContract = new ethers.Contract(GAME_TREASURY_ADDRESS, GAME_TREASURY_ABI, signer);
 
             const valWei = ethers.parseUnits(betAmount, 18);
-            const userBal = await vaultContract.userBalances(address);
             
-            if (userBal < valWei) {
-                const diff = valWei - userBal;
-                const tx = await vaultContract.deposit({ value: diff });
-                await tx.wait();
-            }
+            // Pay-per-game: Transfer exactly the bet amount directly to GameTreasury
+            const tx = await vaultContract.placeBet({ value: valWei });
+            await tx.wait();
 
             // 2. Fetch result from backend
             const response = await fetch('/api/spin', {
@@ -152,6 +149,7 @@ const Spin = () => {
                         requestAnimationFrame(animate);
                     } else {
                         setIsRunning(false);
+                        refreshBalance();
                         setResult(data.landedMultiplier);
                         if (data.isWin) {
                             window.dispatchEvent(new CustomEvent('showToast', { 

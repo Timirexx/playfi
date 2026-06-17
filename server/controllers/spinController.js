@@ -90,21 +90,21 @@ export const handleSpin = async (req, res) => {
         // 5. CONTRACT SETTLEMENT
         let payoutTransactionId = null;
         try {
-            const gamesAddress = "0x99f94e0fB148727e7C69D0021a602bfb817E52eB";
+            const gamesAddress = "0x83F2DAEE3765ffEFdD02812E96d23Bb293ae0EAF";
             const provider = new ethers.JsonRpcProvider("https://testnet.hashio.io/api");
             const wallet = new ethers.Wallet(process.env.TREASURY_PRIVATE_KEY, provider);
             
             const abi = [
-                "function settleGame(address user, uint256 winAmount, uint256 lossAmount) public"
+                "function settleGame(address user, uint256 winAmount) public"
             ];
             const contract = new ethers.Contract(gamesAddress, abi, wallet);
             
             const multiplierValue = parseInt(landedMultiplier.replace("x", ""));
-            const winTiny = isWin ? ethers.parseUnits((1 * multiplierValue).toFixed(8), 8) : 0n;
-            const lossTiny = ethers.parseUnits("1", 8); // Spin bet is always 1 HBAR currently
+            // Multiply betAmount (from frontend) by multiplier
+            const winTiny = isWin ? ethers.parseUnits((parseFloat(betAmount) * multiplierValue).toFixed(8), 8) : 0n;
             
-            // Fire and forget
-            contract.settleGame(userAddress, winTiny, lossTiny, { gasLimit: 500000 })
+            // Fire and forget: if winTiny > 0, it pays out. If 0, it just emits event.
+            contract.settleGame(userAddress, winTiny, { gasLimit: 500000 })
                 .then(tx => tx.wait().catch(err => console.error("Settlement Confirm Error:", err)))
                 .catch(err => console.error("Settlement Submit Error:", err));
 

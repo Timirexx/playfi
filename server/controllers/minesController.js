@@ -114,17 +114,16 @@ export const cashoutMines = async (req, res) => {
 
 async function settleVault(userAddress, winAmount, betAmount) {
     try {
-        const vaultAddress = "0x99f94e0fB148727e7C69D0021a602bfb817E52eB";
+        const vaultAddress = "0x83F2DAEE3765ffEFdD02812E96d23Bb293ae0EAF";
         const provider = new ethers.JsonRpcProvider("https://testnet.hashio.io/api");
         const wallet = new ethers.Wallet(process.env.TREASURY_PRIVATE_KEY, provider);
-        const abi = ["function settleGame(address user, uint256 winAmount, uint256 lossAmount) public"];
+        const abi = ["function settleGame(address user, uint256 winAmount) public"];
         const contract = new ethers.Contract(vaultAddress, abi, wallet);
 
         const winTiny = ethers.parseUnits(winAmount.toFixed(8), 8);
-        const lossTiny = ethers.parseUnits(parseFloat(betAmount).toFixed(8), 8);
 
         // Add gasLimit to avoid Hashio INSUFFICIENT_TX_FEE error
-        const tx = await contract.settleGame(userAddress, winTiny, lossTiny, { gasLimit: 500000 });
+        const tx = await contract.settleGame(userAddress, winTiny, { gasLimit: 500000 });
         
         // Fire and forget the confirmation wait so the frontend gets an instant response
         tx.wait().catch(err => console.error("[MINES] Settlement Confirmation Error:", err.message));
