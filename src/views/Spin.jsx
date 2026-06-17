@@ -66,7 +66,7 @@ const Spin = () => {
             ctx.stroke();
 
             // Text
-            if (['10x', '20x', '40x', '5x', '4x'].includes(mult) || i % 2 === 0) {
+            if (mult !== '1x' || i % 2 === 0) {
                 ctx.save();
                 ctx.translate(cx, cy);
                 ctx.rotate(startAngle + sliceAngle / 2);
