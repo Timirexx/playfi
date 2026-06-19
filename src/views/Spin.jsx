@@ -114,7 +114,7 @@ const Spin = () => {
             await tx.wait();
 
             // 2. Fetch result from backend
-            const response = await fetch('/api/spin', {
+            const response = await fetch(`${API_BASE}/api/spin`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
