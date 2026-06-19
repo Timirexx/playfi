@@ -71,6 +71,7 @@ const Mines = () => {
 
             // 2. Notify Backend to Start Game
             const res = await axios.post(`${API_BASE}/api/mines/start`, {
+                transactionId: tx.hash,
                 userAddress: address,
                 betAmount,
                 minesCount,

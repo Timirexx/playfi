@@ -118,6 +118,7 @@ const Spin = () => {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
+                    transactionId: tx.hash,
                     userAddress: address,
                     betAmount: parseFloat(betAmount),
                     prediction: prediction

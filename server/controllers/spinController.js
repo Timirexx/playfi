@@ -43,7 +43,7 @@ const getLandedMultiplier = () => {
 };
 
 export const handleSpin = async (req, res) => {
-    const { transactionId, userAddress, prediction } = req.body;
+    const { transactionId, userAddress, betAmount, prediction } = req.body;
 
     console.log(`[SPIN] Request from ${userAddress} | Tx: ${transactionId} | Prediction: ${prediction}`);
 
@@ -53,24 +53,23 @@ export const handleSpin = async (req, res) => {
             return res.status(400).json({ success: false, error: "Transaction already processed." });
         }
 
-        // 2. TRANSACTION VERIFICATION (Mirror Node)
-        const formattedId = transactionId.replace("@", "-").replace(".", "-");
-        const mirrorNodeUrl = `https://testnet.mirrornode.hedera.com/api/v1/transactions/${formattedId}`;
-        
-        const response = await axios.get(mirrorNodeUrl);
-        const txData = response.data.transactions[0];
+        // 2. TRANSACTION VERIFICATION (EVM Hash via ethers)
+        const provider = new ethers.JsonRpcProvider("https://testnet.hashio.io/api");
+        const txReceipt = await provider.getTransactionReceipt(transactionId);
+        const txResponse = await provider.getTransaction(transactionId);
 
-        if (!txData || txData.result !== "SUCCESS") {
-            return res.status(400).json({ success: false, error: "Invalid transaction or pending confirmation." });
+        if (!txReceipt || txReceipt.status !== 1) {
+            return res.status(400).json({ success: false, error: "Transaction failed or not found." });
         }
 
-        // Verify 1 HBAR transfer to Treasury
-        const treasuryTransfer = txData.transfers.find(
-            t => t.account === process.env.TREASURY_ACCOUNT_ID && t.amount === 100000000
-        );
+        const expectedAddress = "0x83F2DAEE3765ffEFdD02812E96d23Bb293ae0EAF".toLowerCase();
+        if (!txResponse.to || txResponse.to.toLowerCase() !== expectedAddress) {
+            return res.status(400).json({ success: false, error: "Incorrect payment recipient." });
+        }
 
-        if (!treasuryTransfer) {
-            return res.status(400).json({ success: false, error: "Incorrect payment amount or recipient." });
+        const expectedWei = ethers.parseUnits(betAmount.toString(), 18);
+        if (txResponse.value < expectedWei) {
+            return res.status(400).json({ success: false, error: "Incorrect payment amount." });
         }
 
         // Mark as processed

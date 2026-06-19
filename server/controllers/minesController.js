@@ -33,8 +33,32 @@ const calculateMultiplier = (mines, revealed) => {
 };
 
 export const startMines = async (req, res) => {
-    const { userAddress, betAmount, minesCount, clientSeed } = req.body;
-    if (!userAddress || !betAmount || !minesCount) return res.status(400).json({ success: false, error: "Missing parameters" });
+    const { transactionId, userAddress, betAmount, minesCount, clientSeed } = req.body;
+    if (!transactionId || !userAddress || !betAmount || !minesCount) return res.status(400).json({ success: false, error: "Missing parameters" });
+
+    try {
+        // Verify EVM Transaction
+        const provider = new ethers.JsonRpcProvider("https://testnet.hashio.io/api");
+        const txReceipt = await provider.getTransactionReceipt(transactionId);
+        const txResponse = await provider.getTransaction(transactionId);
+
+        if (!txReceipt || txReceipt.status !== 1) {
+            return res.status(400).json({ success: false, error: "Transaction failed or not found." });
+        }
+
+        const expectedAddress = "0x83F2DAEE3765ffEFdD02812E96d23Bb293ae0EAF".toLowerCase();
+        if (!txResponse.to || txResponse.to.toLowerCase() !== expectedAddress) {
+            return res.status(400).json({ success: false, error: "Incorrect payment recipient." });
+        }
+
+        const expectedWei = ethers.parseUnits(betAmount.toString(), 18);
+        if (txResponse.value < expectedWei) {
+            return res.status(400).json({ success: false, error: "Incorrect payment amount." });
+        }
+    } catch (error) {
+        console.error("Mines TX Verification Error:", error);
+        return res.status(400).json({ success: false, error: "Transaction verification failed." });
+    }
 
     const serverSeed = crypto.randomBytes(32).toString('hex');
     const serverSeedHash = crypto.createHash('sha256').update(serverSeed).digest('hex');
