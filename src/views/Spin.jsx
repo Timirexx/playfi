@@ -156,8 +156,13 @@ const Spin = () => {
                         refreshBalance();
                         setResult(data.landedMultiplier);
                         if (data.isWin) {
+                            const wonAmount = parseFloat(betAmount) * parseInt(data.landedMultiplier);
                             window.dispatchEvent(new CustomEvent('showToast', { 
-                                detail: { message: `🎉 YOU WON! Received ${data.landedMultiplier} Payout!`, type: 'success' } 
+                                detail: { message: `🎉 Congratulations! You won ${wonAmount} HBAR!`, type: 'success' } 
+                            }));
+                        } else {
+                            window.dispatchEvent(new CustomEvent('showToast', { 
+                                detail: { message: `😔 You lost ${betAmount} HBAR. Better luck next time!`, type: 'error' } 
                             }));
                         }
                     }
