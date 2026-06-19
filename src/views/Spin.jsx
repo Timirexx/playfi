@@ -126,8 +126,11 @@ const Spin = () => {
             });
             const data = await response.json();
 
-            if (data.success) {
-                window.dispatchEvent(new CustomEvent('hideTxOverlay'));
+            if (!data.success) {
+                throw new Error(data.error || "Failed to verify transaction");
+            }
+
+            window.dispatchEvent(new CustomEvent('hideTxOverlay'));
                 
                 const targetIndex = data.targetIndex;
                 const extraSpins = 360 * 5; // 5 full rotations
@@ -160,10 +163,12 @@ const Spin = () => {
                     }
                 };
                 requestAnimationFrame(animate);
-            }
         } catch (err) {
             console.error("Spin Error:", err);
             window.dispatchEvent(new CustomEvent('hideTxOverlay'));
+            window.dispatchEvent(new CustomEvent('showToast', { 
+                detail: { message: err.reason || err.message || 'Transaction failed', type: 'error' } 
+            }));
             setIsRunning(false);
         }
     };

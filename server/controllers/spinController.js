@@ -55,11 +55,26 @@ export const handleSpin = async (req, res) => {
 
         // 2. TRANSACTION VERIFICATION (EVM Hash via ethers)
         const provider = new ethers.JsonRpcProvider("https://testnet.hashio.io/api");
-        const txReceipt = await provider.getTransactionReceipt(transactionId);
-        const txResponse = await provider.getTransaction(transactionId);
+        
+        let txReceipt = null;
+        let txResponse = null;
+        let attempts = 0;
+        
+        // Retry loop to handle RPC indexing delay
+        while (attempts < 10) {
+            txReceipt = await provider.getTransactionReceipt(transactionId);
+            txResponse = await provider.getTransaction(transactionId);
+            
+            if (txReceipt && txReceipt.status === 1 && txResponse) {
+                break; // Found and successful
+            }
+            
+            attempts++;
+            await new Promise(resolve => setTimeout(resolve, 1500)); // Wait 1.5s before retry
+        }
 
-        if (!txReceipt || txReceipt.status !== 1) {
-            return res.status(400).json({ success: false, error: "Transaction failed or not found." });
+        if (!txReceipt || txReceipt.status !== 1 || !txResponse) {
+            return res.status(400).json({ success: false, error: "Transaction failed or not found after retries." });
         }
 
         const expectedAddress = "0x83F2DAEE3765ffEFdD02812E96d23Bb293ae0EAF".toLowerCase();
