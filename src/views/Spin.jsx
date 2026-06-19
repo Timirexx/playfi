@@ -7,7 +7,7 @@ import { GAME_TREASURY_ADDRESS, GAME_TREASURY_ABI } from '../contracts/GameTreas
 
 const Spin = () => {
     const navigate = useNavigate();
-    const { isConnected, address, updateStarPoints } = useWallet();
+    const { isConnected, address, updateStarPoints, refreshBalance } = useWallet();
     const { walletProvider } = useAppKitProvider('eip155');
     const canvasRef = useRef(null);
     const [isRunning, setIsRunning] = useState(false);
