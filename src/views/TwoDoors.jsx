@@ -13,16 +13,19 @@ const TwoDoors = () => {
     const [betAmount, setBetAmount] = useState("1");
     const [isRunning, setIsRunning] = useState(false);
     
+    const [isStaked, setIsStaked] = useState(false);
+    const [wagerTxId, setWagerTxId] = useState(null);
+    
     // UI States: null (waiting), 'opening' (animation), 'win', 'lose'
     const [gameState, setGameState] = useState(null);
     const [selectedDoor, setSelectedDoor] = useState(null);
     const [treasureDoor, setTreasureDoor] = useState(null);
 
-    const handlePlay = async (doorNumber) => {
+    const handleStake = async () => {
         if (!isConnected || isRunning || !walletProvider) return;
         setIsRunning(true);
-        setSelectedDoor(doorNumber);
         setGameState(null);
+        setSelectedDoor(null);
         setTreasureDoor(null);
 
         window.dispatchEvent(new CustomEvent('showTxOverlay', { 
@@ -43,14 +46,40 @@ const TwoDoors = () => {
             }));
             
             const receipt = await tx.wait();
+            
+            window.dispatchEvent(new CustomEvent('hideTxOverlay'));
+            window.dispatchEvent(new CustomEvent('showToast', { 
+                detail: { message: `Stake Confirmed! Choose a door.`, type: 'success' } 
+            }));
 
+            setWagerTxId(receipt.hash);
+            setIsStaked(true);
+            setIsRunning(false);
+
+        } catch (err) {
+            console.error("Stake Error:", err);
+            window.dispatchEvent(new CustomEvent('hideTxOverlay'));
+            window.dispatchEvent(new CustomEvent('showToast', { 
+                detail: { message: err.reason || err.message || 'Transaction failed', type: 'error' } 
+            }));
+            setIsRunning(false);
+        }
+    };
+
+    const handlePlay = async (doorNumber) => {
+        if (!isStaked || !wagerTxId || isRunning) return;
+        setIsRunning(true);
+        setSelectedDoor(doorNumber);
+        setGameState('opening');
+
+        try {
             // 2. Call Backend API
             const API_BASE = window.location.hostname === 'localhost' ? "http://localhost:3001" : "https://server-chi-rose-76.vercel.app";
             const response = await fetch(`${API_BASE}/api/twodoors`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    transactionId: receipt.hash,
+                    transactionId: wagerTxId,
                     userAddress: address,
                     betAmount: betAmount,
                     selectedDoor: doorNumber
@@ -63,15 +92,14 @@ const TwoDoors = () => {
                 throw new Error(data.error || "Failed to verify transaction");
             }
 
-            // Hide overlay and start animation
-            window.dispatchEvent(new CustomEvent('hideTxOverlay'));
-            setGameState('opening');
             setTreasureDoor(data.treasureDoor);
 
             // Wait 1.5s for opening animation, then show result
             setTimeout(() => {
                 setGameState(data.isWin ? 'win' : 'lose');
                 setIsRunning(false);
+                setIsStaked(false);
+                setWagerTxId(null);
                 refreshBalance();
                 
                 if (data.isWin) {
@@ -87,14 +115,15 @@ const TwoDoors = () => {
             }, 1500);
 
         } catch (err) {
-            console.error("Two Doors Error:", err);
-            window.dispatchEvent(new CustomEvent('hideTxOverlay'));
+            console.error("Two Doors API Error:", err);
             window.dispatchEvent(new CustomEvent('showToast', { 
-                detail: { message: err.reason || err.message || 'Transaction failed', type: 'error' } 
+                detail: { message: err.reason || err.message || 'Verification failed', type: 'error' } 
             }));
             setIsRunning(false);
             setGameState(null);
             setSelectedDoor(null);
+            setIsStaked(false);
+            setWagerTxId(null);
         }
     };
 
@@ -110,7 +139,8 @@ const TwoDoors = () => {
             doorContent = hasTreasure ? "💰" : "💨"; // Money bag vs smoke/empty
         }
 
-        let borderColor = isSelected ? '#00f0ff' : 'rgba(255,255,255,0.2)';
+        let borderColor = 'rgba(255,255,255,0.2)';
+        if (isSelected) borderColor = '#00f0ff';
         if (isRevealed) {
             if (hasTreasure) borderColor = '#00ffaa'; // Green for treasure
             else if (isSelected && !hasTreasure) borderColor = '#ff003c'; // Red for wrong pick
@@ -118,7 +148,7 @@ const TwoDoors = () => {
 
         return (
             <div 
-                onClick={() => !isRunning && handlePlay(doorNumber)}
+                onClick={() => isStaked && !isRunning && handlePlay(doorNumber)}
                 className={`door-container ${isOpening ? 'door-shake' : ''}`}
                 style={{ 
                     width: '120px', 
@@ -129,10 +159,11 @@ const TwoDoors = () => {
                     alignItems: 'center', 
                     justifyContent: 'center', 
                     background: isSelected ? 'rgba(0, 240, 255, 0.1)' : 'rgba(255, 255, 255, 0.05)',
-                    cursor: isRunning ? 'not-allowed' : 'pointer',
+                    cursor: (!isStaked || isRunning) ? 'not-allowed' : 'pointer',
                     transition: 'all 0.3s ease',
                     boxShadow: isWinnerDoor ? '0 0 20px rgba(0, 255, 170, 0.5)' : 'none',
-                    transform: isSelected && !isRevealed ? 'scale(1.05)' : 'scale(1)'
+                    transform: isSelected && !isRevealed ? 'scale(1.05)' : 'scale(1)',
+                    opacity: (!isStaked && !isRevealed) ? 0.5 : 1
                 }}
             >
                 <span style={{ 
@@ -165,20 +196,36 @@ const TwoDoors = () => {
                         Double your HBAR or lose it all. Pick the door with the treasure!
                     </p>
 
-                    <div className="bet-input-group" style={{ width: '100%', maxWidth: '300px', marginBottom: '2rem' }}>
-                        <label>Bet Amount (HBAR)</label>
-                        <div className="input-wrapper">
-                            <input 
-                                type="number" 
-                                value={betAmount} 
-                                onChange={(e) => setBetAmount(e.target.value)}
-                                min="1" 
+                    {!isStaked && (
+                        <div className="bet-input-group" style={{ width: '100%', maxWidth: '300px', marginBottom: '1rem' }}>
+                            <label>Bet Amount (HBAR)</label>
+                            <div className="input-wrapper">
+                                <input 
+                                    type="number" 
+                                    value={betAmount} 
+                                    onChange={(e) => setBetAmount(e.target.value)}
+                                    min="1" 
+                                    disabled={isRunning}
+                                    style={{ width: '100%', padding: '0.5rem', background: 'rgba(0,0,0,0.5)', color: 'white', border: '1px solid #00f0ff', borderRadius: '4px' }}
+                                />
+                                <span className="input-currency">HBAR</span>
+                            </div>
+                            <button 
+                                className="btn btn-hero btn-glow" 
+                                onClick={handleStake}
                                 disabled={isRunning}
-                                style={{ width: '100%', padding: '0.5rem', background: 'rgba(0,0,0,0.5)', color: 'white', border: '1px solid #00f0ff', borderRadius: '4px' }}
-                            />
-                            <span className="input-currency">HBAR</span>
+                                style={{ width: '100%', marginTop: '1rem' }}
+                            >
+                                {isRunning ? 'Staking...' : 'Stake HBAR'}
+                            </button>
                         </div>
-                    </div>
+                    )}
+
+                    {isStaked && !gameState && (
+                        <div style={{ color: '#00ffaa', marginBottom: '1rem', fontWeight: 'bold', animation: 'pulse 1.5s infinite' }}>
+                            Staked {betAmount} HBAR! Now, select a door.
+                        </div>
+                    )}
 
                     <div style={{ display: 'flex', gap: '3rem', margin: '1rem 0' }}>
                         {renderDoor(1)}
@@ -193,6 +240,20 @@ const TwoDoors = () => {
                     )}
                     {gameState === 'lose' && (
                         <p style={{ color: '#ff003c', marginTop: '2rem', fontSize: '1.2rem', fontWeight: 'bold' }}>Empty! Better luck next time. 💨</p>
+                    )}
+                    
+                    {(gameState === 'win' || gameState === 'lose') && (
+                        <button 
+                            className="btn btn-glow" 
+                            style={{ marginTop: '2rem' }}
+                            onClick={() => {
+                                setGameState(null);
+                                setSelectedDoor(null);
+                                setTreasureDoor(null);
+                            }}
+                        >
+                            Play Again
+                        </button>
                     )}
                 </div>
             </div>
