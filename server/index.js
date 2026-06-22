@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { handleSpin } from './controllers/spinController.js';
 import { startMines, revealTile, cashoutMines } from './controllers/minesController.js';
+import { handleTwoDoors } from './controllers/twoDoorsController.js';
 
 dotenv.config();
 
@@ -44,6 +45,9 @@ app.post('/api/sync-stars', (req, res) => {
 
 // Spin Route
 app.post('/api/spin', handleSpin);
+
+// Two Doors Route
+app.post('/api/twodoors', handleTwoDoors);
 
 // Mines Routes
 app.post('/api/mines/start', startMines);
