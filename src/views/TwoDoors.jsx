@@ -39,7 +39,7 @@ const TwoDoors = () => {
             const vaultContract = new ethers.Contract(GAME_TREASURY_ADDRESS, GAME_TREASURY_ABI, signer);
 
             const valWei = ethers.parseUnits(betAmount, 18);
-            const tx = await vaultContract.placeWager({ value: valWei });
+            const tx = await vaultContract.placeBet({ value: valWei });
             
             window.dispatchEvent(new CustomEvent('showTxOverlay', { 
                 detail: { title: 'Verifying Wager', desc: 'Waiting for network confirmation...' } 
