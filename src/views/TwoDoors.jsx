@@ -105,11 +105,11 @@ const TwoDoors = () => {
                 if (data.isWin) {
                     const wonAmount = parseFloat(betAmount) * 2;
                     window.dispatchEvent(new CustomEvent('showToast', { 
-                        detail: { message: `🎉 Congratulations! You won ${wonAmount} HBAR!`, type: 'success' } 
+                        detail: { message: `You Won! You received ${wonAmount} HBAR.`, type: 'success' } 
                     }));
                 } else {
                     window.dispatchEvent(new CustomEvent('showToast', { 
-                        detail: { message: `😔 You lost ${betAmount} HBAR. Better luck next time!`, type: 'error' } 
+                        detail: { message: `You Lost! Better luck next time.`, type: 'error' } 
                     }));
                 }
             }, 1500);
