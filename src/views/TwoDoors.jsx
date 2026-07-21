@@ -246,9 +246,23 @@ const TwoDoors = () => {
                 }
 
                 .td-title {
-                    font-size: 2.5rem;
+                    font-family: var(--font-heading);
+                    font-size: clamp(2rem, 5vw, 3.5rem);
+                    font-weight: 900;
+                    letter-spacing: 4px;
                     margin: 0;
-                    letter-spacing: 2px;
+                    background: linear-gradient(90deg, #00f0ff, #fff 50%, #00f0ff);
+                    background-size: 200% auto;
+                    -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                    background-clip: text;
+                    animation: td-shimmer 4s linear infinite;
+                    text-transform: uppercase;
+                }
+                
+                @keyframes td-shimmer {
+                    0%   { background-position: 0% center; }
+                    100% { background-position: 200% center; }
                 }
 
                 .td-subtitle {
@@ -567,7 +581,7 @@ const TwoDoors = () => {
                     
                     <div className="td-title-section">
                         <div className="td-icon-wrap">🚪</div>
-                        <h2 className="td-title neon-text outline-text">TWO DOORS</h2>
+                        <h2 className="td-title">TWO DOORS</h2>
                     </div>
                     <p className="td-subtitle">Double your HBAR or lose it all. Pick the door with the treasure!</p>
 
