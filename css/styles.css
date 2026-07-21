@@ -124,6 +124,9 @@ h1, h2, h3, h4, .brand-text {
     gap: 1rem;
     /* Prevent any child from being clipped */
     overflow: visible;
+    background: rgba(5, 7, 12, 0.85) !important;
+    backdrop-filter: blur(24px) !important;
+    -webkit-backdrop-filter: blur(24px) !important;
 }
 
 .brand-logo {
