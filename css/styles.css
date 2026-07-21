@@ -172,13 +172,32 @@ h1, h2, h3, h4, .brand-text {
     font-family: var(--font-heading);
     font-size: 0.95rem;
     font-weight: 500;
-    transition: var(--transition);
-    opacity: 0.7;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    opacity: 0.65;
+    /* Pill shape */
+    padding: 0.45rem 1rem;
+    border-radius: 100px;
+    border: 1px solid transparent;
 }
 
-.nav-tab:hover, .nav-tab.active {
+/* Hover — subtle pill background, no underline */
+.nav-tab:hover {
     opacity: 1;
     color: var(--neon-blue);
+    background: rgba(0, 240, 255, 0.06);
+    border-color: rgba(0, 240, 255, 0.15);
+}
+
+/* Active — solid glowing pill */
+.nav-tab.active {
+    opacity: 1;
+    color: var(--neon-blue);
+    background: rgba(0, 240, 255, 0.12);
+    border-color: rgba(0, 240, 255, 0.45);
+    box-shadow:
+        0 0 12px rgba(0, 240, 255, 0.25),
+        inset 0 0 10px rgba(0, 240, 255, 0.06);
+    font-weight: 700;
 }
 
 .nav-tab .tab-icon {
@@ -1911,28 +1930,9 @@ body.is-locked nav {
     box-shadow: 0 4px 40px rgba(0, 240, 255, 0.08);
 }
 
-.nav-tab {
-    position: relative;
-    padding-bottom: 4px;
-}
-
+/* No underline pseudo-element — pill style is handled on .nav-tab itself */
 .nav-tab::after {
-    content: '';
-    position: absolute;
-    bottom: -2px;
-    left: 50%;
-    transform: translateX(-50%) scaleX(0);
-    width: 60%;
-    height: 2px;
-    background: var(--neon-blue);
-    box-shadow: 0 0 8px var(--neon-blue);
-    border-radius: 2px;
-    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.nav-tab:hover::after,
-.nav-tab.active::after {
-    transform: translateX(-50%) scaleX(1);
+    display: none;
 }
 
 /* Logo float animation */
