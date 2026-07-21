@@ -145,6 +145,59 @@ const Landing = () => {
                     line-height: 1.5;
                 }
 
+                /* Vault Wide Card */
+                .feature-card-wide {
+                    background: rgba(10, 15, 25, 0.6);
+                    backdrop-filter: blur(12px);
+                    -webkit-backdrop-filter: blur(12px);
+                    border: 1px solid rgba(255, 184, 0, 0.3);
+                    border-radius: 20px;
+                    padding: 3rem 2rem;
+                    width: 100%;
+                    max-width: 1200px;
+                    margin-bottom: 2rem;
+                    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    gap: 2rem;
+                    text-align: left;
+                    z-index: 2;
+                    cursor: pointer;
+                }
+
+                .feature-card-wide:hover {
+                    transform: translateY(-5px);
+                    border-color: rgba(255, 184, 0, 0.6);
+                    background: rgba(10, 15, 25, 0.8);
+                    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), 0 0 30px rgba(255, 184, 0, 0.15);
+                }
+
+                .wide-icon {
+                    font-size: 5rem;
+                    filter: drop-shadow(0 0 20px rgba(255, 184, 0, 0.4));
+                    flex-shrink: 0;
+                }
+
+                .wide-content {
+                    flex-grow: 1;
+                }
+                
+                .wide-title {
+                    font-family: var(--font-heading);
+                    color: #ffb800;
+                    font-size: 2rem;
+                    font-weight: 700;
+                    margin-bottom: 1rem;
+                }
+                
+                @media (max-width: 768px) {
+                    .feature-card-wide {
+                        flex-direction: column;
+                        text-align: center;
+                    }
+                }
+
                 /* Floating background elements */
                 .ambient-orb {
                     position: absolute;
@@ -192,6 +245,18 @@ const Landing = () => {
                 <button className="btn-start" onClick={() => navigate('/hub')}>
                     Get Started
                 </button>
+            </div>
+
+            <div className="feature-card-wide" onClick={() => navigate('/vault')}>
+                <div className="wide-content">
+                    <div className="wide-title">The PlayFi Vault</div>
+                    <div className="feature-desc" style={{ fontSize: '1.1rem', maxWidth: '800px' }}>
+                        Stake your HBAR securely in the Vault to start earning Play Points. 
+                        Receive exclusive rewards, climb the leaderboard, and unlock premium platform features. 
+                        The more you stake, the more you earn.
+                    </div>
+                </div>
+                <div className="wide-icon">🏦</div>
             </div>
 
             <div className="landing-features">
