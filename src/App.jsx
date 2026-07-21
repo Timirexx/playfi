@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from './components/layout/Navbar';
-import GameTabs from './components/layout/GameTabs';
+
 import Home from './views/Home';
 import Vault from './views/Vault';
 import Mines from './views/Mines';
@@ -16,7 +16,6 @@ const App = () => {
     <Router>
       <div id="app-container">
         <Navbar />
-        <GameTabs />
         
         <main className="content-area">
           <Routes>

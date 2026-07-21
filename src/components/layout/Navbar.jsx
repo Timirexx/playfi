@@ -1,11 +1,12 @@
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useWallet } from '../../context/WalletContext';
 import logo from '../../assets/logo.png';
 
 const Navbar = () => {
   const { isConnected, balance, starPoints, username, connect, isRefreshing, refreshBalance } = useWallet();
   const navigate = useNavigate();
+  const location = useLocation();
   const [isAnimate, setIsAnimate] = React.useState(false);
 
   const handlePointsClick = () => {
@@ -26,14 +27,26 @@ const Navbar = () => {
         <img src={logo} alt="PlayFi Logo" className="logo-img" />
       </div>
       
+      <div className="nav-center-tabs">
+        <Link to="/vault" className={`nav-tab ${location.pathname === '/vault' ? 'active' : ''}`}>
+          <span className="tab-icon">🏦</span> Vault
+        </Link>
+        <Link to="/" className={`nav-tab ${['/', '/mines', '/spin', '/two-doors'].includes(location.pathname) ? 'active' : ''}`}>
+          <span className="tab-icon">🎮</span> Games
+        </Link>
+        <Link to="/leaderboard" className={`nav-tab ${location.pathname === '/leaderboard' ? 'active' : ''}`}>
+          <span className="tab-icon">🏆</span> Leaderboard
+        </Link>
+      </div>
+
       <div className="nav-wallet">
         <div 
           className={`points-section points-interactive ${isAnimate ? 'points-pop' : ''}`} 
           title="Click to view balance info" 
           onClick={handlePointsClick}
         >
-          <span className="star-icon">⭐</span>
-          <span className="points-value">{starPoints.toLocaleString()}</span>
+          <span className="star-icon" style={{ color: '#ffb800' }}>⭐</span>
+          <span className="points-value" style={{ color: '#ffb800' }}>{starPoints.toLocaleString()}</span>
         </div>
 
         {isConnected ? (
@@ -50,8 +63,9 @@ const Navbar = () => {
         ) : (
           <button 
             id="connect-btn" 
-            className="btn btn-primary btn-glow" 
+            className="btn btn-glow" 
             onClick={connect}
+            style={{ padding: '0.6rem 1.5rem', borderRadius: '4px' }}
           >
             Connect Wallet
           </button>
