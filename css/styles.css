@@ -1320,3 +1320,425 @@ body.is-locked nav {
 .points-pop {
     animation: pointsPop 0.5s ease-out;
 }
+
+/* =========================================
+   Home Dashboard Refactored Layout
+========================================= */
+
+/* Hero Section */
+.hero-dashboard {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 3rem 4rem;
+    border-radius: 16px;
+    margin-bottom: 3rem;
+    background: linear-gradient(90deg, rgba(5,5,8,1) 0%, rgba(0,240,255,0.05) 100%);
+    position: relative;
+    overflow: hidden;
+}
+
+.hero-dashboard-content {
+    max-width: 600px;
+    z-index: 2;
+}
+
+.hero-dashboard-kicker {
+    color: var(--neon-blue);
+    font-weight: bold;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+}
+
+.hero-dashboard-title {
+    font-size: 3.5rem;
+    line-height: 1.1;
+    margin-bottom: 1.5rem;
+    font-family: var(--font-heading);
+}
+
+.hero-dashboard-subtitle {
+    color: var(--text-muted);
+    font-size: 1.1rem;
+    line-height: 1.6;
+}
+
+.hero-dashboard-graphics {
+    position: absolute;
+    right: -5%;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 1;
+    opacity: 0.8;
+}
+
+.hero-graphics-container {
+    width: 400px;
+    height: 400px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0,240,255,0.15) 0%, transparent 70%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.hero-graphics-controller {
+    font-size: 10rem;
+    filter: drop-shadow(0 0 20px rgba(0, 240, 255, 0.5));
+}
+
+.hero-graphics-coin {
+    position: absolute;
+    right: 50px;
+    bottom: 100px;
+    font-size: 5rem;
+    filter: drop-shadow(0 0 10px rgba(0,240,255,0.8));
+}
+
+/* Sections */
+.home-section-container {
+    margin-bottom: 3rem;
+}
+
+.home-section-title {
+    font-size: 1.5rem;
+    margin-bottom: 0.2rem;
+    font-family: var(--font-heading);
+}
+
+.home-section-title.uppercase {
+    text-transform: uppercase;
+}
+
+.home-section-subtitle {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+}
+
+/* Games Grid */
+.home-games-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+}
+
+.home-game-card-layout {
+    display: flex;
+    flex-direction: column;
+    padding: 1.5rem;
+    border-radius: 12px;
+}
+
+.home-game-card-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.home-game-title {
+    margin: 0;
+    color: #ffb800;
+    font-size: 1.2rem;
+    font-family: var(--font-heading);
+}
+
+.home-game-desc {
+    margin: 0.2rem 0 0 0;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.home-game-btn {
+    margin-top: auto;
+    padding: 0.8rem;
+    border-radius: 6px;
+}
+
+/* Vault Panel */
+.home-vault-panel {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 2rem;
+    border-radius: 12px;
+}
+
+.home-vault-header {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.home-vault-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: rgba(0, 240, 255, 0.1);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.8rem;
+    border: 1px solid rgba(0, 240, 255, 0.3);
+}
+
+.home-vault-title {
+    margin: 0;
+    color: #ffb800;
+    font-size: 1.3rem;
+    font-family: var(--font-heading);
+}
+
+.home-vault-desc {
+    margin: 0.2rem 0 0 0;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.home-vault-stats {
+    display: flex;
+    gap: 4rem;
+    text-align: left;
+}
+
+.vault-stat-label {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    margin-bottom: 0.3rem;
+}
+
+.vault-stat-value {
+    color: #ffb800;
+    font-size: 1.3rem;
+    font-weight: bold;
+}
+
+.home-vault-btn {
+    width: auto;
+    padding: 1rem 3rem;
+    border-radius: 6px;
+    margin: 0;
+}
+
+/* Leaderboard */
+.home-leaderboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.home-leaderboard-subtitle {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+.home-leaderboard-live {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.live-indicator {
+    width: 8px;
+    height: 8px;
+    background: var(--neon-blue);
+    border-radius: 50%;
+    display: inline-block;
+    box-shadow: 0 0 8px var(--neon-blue);
+}
+
+.home-leaderboard-panel {
+    padding: 0;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.home-leaderboard-tabs {
+    display: flex;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    padding: 0 1rem;
+    overflow-x: auto;
+    white-space: nowrap;
+}
+
+.leaderboard-tab-item {
+    padding: 1rem 1.5rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.leaderboard-tab-item.active {
+    color: var(--neon-blue);
+    border-bottom: 2px solid var(--neon-blue);
+    font-weight: bold;
+}
+
+.home-leaderboard-list {
+    display: flex;
+    justify-content: space-between;
+    padding: 1.5rem 2rem;
+    overflow-x: auto;
+    gap: 1.5rem;
+}
+
+.home-leaderboard-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    min-width: max-content;
+}
+
+.leaderboard-item-rank {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: var(--text-muted);
+}
+
+.leaderboard-item-rank.top-rank {
+    color: #ffb800;
+}
+
+.leaderboard-item-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #1a1b26;
+    border: 1px solid #333;
+}
+
+.leaderboard-item-avatar.top-avatar {
+    border: 2px solid #ffb800;
+}
+
+.leaderboard-item-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.leaderboard-item-address {
+    font-size: 0.9rem;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.leaderboard-item-pts {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+/* Footer */
+.home-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 2rem 0;
+    border-top: 1px solid rgba(255,255,255,0.05);
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.home-footer-socials {
+    display: flex;
+    gap: 1.5rem;
+    font-size: 1.2rem;
+}
+
+.hover-white:hover {
+    color: white !important;
+}
+
+/* =========================================
+   Responsive Dashboard Queries
+========================================= */
+
+@media (max-width: 1024px) {
+    .home-games-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .home-vault-panel {
+        flex-direction: column;
+        gap: 2rem;
+        text-align: center;
+    }
+    .home-vault-header {
+        flex-direction: column;
+    }
+    .home-vault-stats {
+        width: 100%;
+        justify-content: space-between;
+        gap: 1rem;
+    }
+    .home-vault-btn {
+        width: 100%;
+    }
+    .home-leaderboard-list {
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+    .hero-dashboard {
+        padding: 2rem;
+    }
+    .hero-dashboard-title {
+        font-size: 2.5rem;
+    }
+    .hero-graphics-container {
+        width: 250px;
+        height: 250px;
+    }
+    .hero-graphics-controller {
+        font-size: 6rem;
+    }
+    .hero-graphics-coin {
+        font-size: 3rem;
+        right: 20px;
+        bottom: 50px;
+    }
+}
+
+@media (max-width: 768px) {
+    .hero-dashboard {
+        flex-direction: column-reverse;
+        text-align: center;
+        gap: 2rem;
+        background: rgba(5,5,8,1);
+    }
+    .hero-dashboard-graphics {
+        position: relative;
+        transform: none;
+        top: 0;
+        right: 0;
+    }
+    .home-games-grid {
+        grid-template-columns: 1fr;
+    }
+    .home-vault-stats {
+        flex-direction: column;
+        align-items: center;
+    }
+    .home-vault-btn {
+        padding: 1rem;
+    }
+    .home-footer {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+    }
+    .nav-center-tabs {
+        display: none; /* Hide top tabs on mobile since we have bottom nav */
+    }
+    .nav-wallet {
+        flex: 1;
+        justify-content: flex-end;
+    }
+}
+
