@@ -767,7 +767,7 @@ const Mines = () => {
             <div className="sh-page">
                 {/* ---- HEADER ---- */}
                 <div className="sh-header">
-                    <button className="sh-back-btn" onClick={() => navigate('/')}>
+                    <button className="sh-back-btn" onClick={() => navigate('/hub')}>
                         ← Back to Hub
                     </button>
                     <div className="sh-title-wrap">

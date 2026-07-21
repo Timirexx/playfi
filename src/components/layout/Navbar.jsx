@@ -31,7 +31,7 @@ const Navbar = () => {
         <Link to="/vault" className={`nav-tab ${location.pathname === '/vault' ? 'active' : ''}`}>
           <span className="tab-icon">🏦</span> Vault
         </Link>
-        <Link to="/" className={`nav-tab ${['/', '/mines', '/spin', '/two-doors'].includes(location.pathname) ? 'active' : ''}`}>
+        <Link to="/hub" className={`nav-tab ${['/hub', '/mines', '/spin', '/two-doors'].includes(location.pathname) ? 'active' : ''}`}>
           <span className="tab-icon">🎮</span> Games
         </Link>
         <Link to="/leaderboard" className={`nav-tab ${location.pathname === '/leaderboard' ? 'active' : ''}`}>

@@ -180,7 +180,7 @@ const TwoDoors = () => {
 
     return (
         <div className="view section-active">
-            <button className="btn btn-glow" onClick={() => navigate('/')} style={{ marginBottom: '2rem' }}>&larr; Back to Hub</button>
+            <button className="btn btn-glow" onClick={() => navigate('/hub')} style={{ marginBottom: '2rem' }}>&larr; Back to Hub</button>
             
             <div className="two-doors-wrapper" style={{ marginTop: '2rem' }}>
                 <div className="two-doors-card glass-panel" style={{ 

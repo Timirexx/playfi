@@ -626,7 +626,7 @@ const Spin = () => {
             <div className="stw-page">
                 {/* HEADER */}
                 <div className="stw-header">
-                    <button className="stw-back-btn" onClick={() => navigate('/')}>
+                    <button className="stw-back-btn" onClick={() => navigate('/hub')}>
                         ← Back to Hub
                     </button>
                     <div className="stw-title-wrap">

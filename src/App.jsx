@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from './components/layout/Navbar';
 
+import Landing from './views/Landing';
 import Home from './views/Home';
 import Vault from './views/Vault';
 import Mines from './views/Mines';
@@ -19,7 +20,8 @@ const App = () => {
         
         <main className="content-area">
           <Routes>
-            <Route path="/" element={<Home />} />
+            <Route path="/" element={<Landing />} />
+            <Route path="/hub" element={<Home />} />
             <Route path="/vault" element={<Vault />} />
             <Route path="/mines" element={<Mines />} />
             <Route path="/spin" element={<Spin />} />
