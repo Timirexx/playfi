@@ -191,25 +191,28 @@ const TwoDoors = () => {
                 }
 
                 .td-back-btn {
-                    background: var(--neon-blue);
-                    color: #000;
-                    border: none;
-                    padding: 0.6rem 1.2rem;
-                    border-radius: 8px;
-                    font-family: var(--font-heading);
-                    font-weight: 700;
-                    cursor: pointer;
                     display: inline-flex;
                     align-items: center;
                     gap: 0.5rem;
-                    box-shadow: 0 0 15px rgba(0, 240, 255, 0.5);
+                    padding: 0.5rem 1.2rem;
+                    border-radius: 100px;
+                    border: 1px solid rgba(255,255,255,0.12);
+                    background: rgba(255,255,255,0.04);
+                    color: var(--text-main);
+                    font-family: var(--font-heading);
+                    font-size: 0.85rem;
+                    cursor: pointer;
                     transition: all 0.3s ease;
+                    backdrop-filter: blur(8px);
+                    text-decoration: none;
+                    white-space: nowrap;
                     width: fit-content;
                 }
 
                 .td-back-btn:hover {
-                    box-shadow: 0 0 25px rgba(0, 240, 255, 0.8);
-                    transform: translateY(-2px);
+                    background: rgba(255,255,255,0.08);
+                    border-color: rgba(255,255,255,0.25);
+                    transform: translateX(-2px);
                 }
 
                 .td-main-card {
