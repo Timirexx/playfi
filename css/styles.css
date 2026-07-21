@@ -1742,3 +1742,546 @@ body.is-locked nav {
     }
 }
 
+/* =============================================
+   PREMIUM ANIMATIONS & HOVER EFFECTS
+   These are purely additive — design is unchanged
+============================================= */
+
+/* ---- Keyframes Library ---- */
+
+@keyframes shimmer {
+    0%   { background-position: -200% center; }
+    100% { background-position: 200% center; }
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0px);   }
+    50%       { transform: translateY(-8px);  }
+}
+
+@keyframes float-coin {
+    0%, 100% { transform: translateY(0px) rotate(0deg);  }
+    50%       { transform: translateY(-12px) rotate(8deg); }
+}
+
+@keyframes glow-pulse {
+    0%, 100% { box-shadow: 0 0 15px rgba(0, 240, 255, 0.3); }
+    50%       { box-shadow: 0 0 35px rgba(0, 240, 255, 0.7), 0 0 60px rgba(0, 240, 255, 0.2); }
+}
+
+@keyframes border-glow-pulse {
+    0%, 100% { border-color: rgba(0, 240, 255, 0.15); }
+    50%       { border-color: rgba(0, 240, 255, 0.5); }
+}
+
+@keyframes scan-line {
+    0%   { transform: translateY(-100%); opacity: 0; }
+    10%  { opacity: 0.4; }
+    90%  { opacity: 0.4; }
+    100% { transform: translateY(100vh); opacity: 0; }
+}
+
+@keyframes rotate-slow {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+}
+
+@keyframes counter-rotate {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(-360deg); }
+}
+
+@keyframes scale-in {
+    from { transform: scale(0.92); opacity: 0; }
+    to   { transform: scale(1);    opacity: 1; }
+}
+
+@keyframes slide-up {
+    from { transform: translateY(20px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+}
+
+@keyframes neon-text-flicker {
+    0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% {
+        text-shadow: 0 0 8px #00f0ff, 0 0 20px #00f0ff, 0 0 40px #00f0ff;
+    }
+    20%, 24%, 55% { text-shadow: none; }
+}
+
+@keyframes gold-shimmer {
+    0%   { background-position: -200% center; }
+    100% { background-position: 200% center; }
+}
+
+/* ---- Page Entry Animations ---- */
+
+.view.section-active {
+    animation: scale-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.home-section-container {
+    animation: slide-up 0.5s ease forwards;
+}
+
+.home-section-container:nth-child(2) { animation-delay: 0.05s; }
+.home-section-container:nth-child(3) { animation-delay: 0.10s; }
+.home-section-container:nth-child(4) { animation-delay: 0.15s; }
+
+/* ---- Background Ambient Scan-Line ---- */
+
+body::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(0, 240, 255, 0.4), transparent);
+    animation: scan-line 8s linear infinite;
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* ---- Navbar ---- */
+
+.navbar {
+    transition: background 0.4s ease, box-shadow 0.4s ease;
+}
+
+.navbar:hover {
+    box-shadow: 0 4px 40px rgba(0, 240, 255, 0.08);
+}
+
+.nav-tab {
+    position: relative;
+    padding-bottom: 4px;
+}
+
+.nav-tab::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 50%;
+    transform: translateX(-50%) scaleX(0);
+    width: 60%;
+    height: 2px;
+    background: var(--neon-blue);
+    box-shadow: 0 0 8px var(--neon-blue);
+    border-radius: 2px;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.nav-tab:hover::after,
+.nav-tab.active::after {
+    transform: translateX(-50%) scaleX(1);
+}
+
+/* Logo float animation */
+.logo-img {
+    transition: filter 0.3s ease, transform 0.4s ease;
+}
+
+.brand-logo:hover .logo-img {
+    filter: drop-shadow(0 0 28px rgba(0, 240, 255, 0.8)) brightness(1.15);
+    transform: scale(1.04);
+}
+
+/* Wallet pill hover */
+.wallet-pill {
+    transition: all 0.3s ease;
+}
+
+.wallet-pill:hover {
+    transform: translateY(-1px);
+}
+
+/* Connect button shimmer */
+#connect-btn {
+    position: relative;
+    overflow: hidden;
+}
+
+#connect-btn::before {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 60%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transform: skewX(-20deg);
+    transition: left 0.5s ease;
+}
+
+#connect-btn:hover::before {
+    left: 150%;
+}
+
+/* ---- Hero Dashboard ---- */
+
+.hero-dashboard {
+    transition: box-shadow 0.4s ease;
+}
+
+.hero-dashboard:hover {
+    box-shadow: 0 8px 60px rgba(0, 240, 255, 0.12), 0 0 0 1px rgba(0, 240, 255, 0.2);
+}
+
+.hero-dashboard-title {
+    transition: text-shadow 0.4s ease;
+}
+
+.hero-dashboard:hover .hero-dashboard-title {
+    text-shadow: 0 0 30px rgba(0, 240, 255, 0.25);
+}
+
+/* Controller floating animation */
+.hero-graphics-controller {
+    animation: float 4s ease-in-out infinite;
+    display: block;
+}
+
+/* Coin floating animation (offset timing) */
+.hero-graphics-coin {
+    animation: float-coin 3.5s ease-in-out 0.8s infinite;
+}
+
+/* ---- Glass Panel Hover ---- */
+
+.glass-panel {
+    transition: box-shadow 0.35s ease, border-color 0.35s ease, transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ---- Game Cards ---- */
+
+.home-game-card {
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+                box-shadow 0.35s ease,
+                border-color 0.35s ease;
+}
+
+.home-game-card:hover {
+    transform: translateY(-8px) scale(1.01);
+    border-color: rgba(0, 240, 255, 0.5);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4), 0 0 30px rgba(0, 240, 255, 0.15);
+}
+
+.home-game-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: rgba(0, 240, 255, 0.1);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.5rem;
+    border: 1px solid rgba(0, 240, 255, 0.3);
+    box-shadow: 0 0 15px rgba(0, 240, 255, 0.2);
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+                box-shadow 0.4s ease,
+                background 0.3s ease;
+    flex-shrink: 0;
+}
+
+.home-game-card:hover .home-game-icon {
+    transform: scale(1.2) rotate(-5deg);
+    background: rgba(0, 240, 255, 0.2);
+    box-shadow: 0 0 25px rgba(0, 240, 255, 0.5);
+}
+
+/* Play Now button shimmer on card hover */
+.home-game-btn {
+    position: relative;
+    overflow: hidden;
+    transition: box-shadow 0.3s ease, transform 0.3s ease, letter-spacing 0.3s ease;
+}
+
+.home-game-btn::before {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 60%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+    transform: skewX(-20deg);
+    transition: left 0s;
+}
+
+.home-game-card:hover .home-game-btn::before {
+    left: 150%;
+    transition: left 0.5s ease;
+}
+
+.home-game-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 25px rgba(0, 240, 255, 0.6);
+    letter-spacing: 0.5px;
+}
+
+/* ---- Vault Panel ---- */
+
+.home-vault-panel {
+    transition: box-shadow 0.35s ease, border-color 0.35s ease;
+}
+
+.home-vault-panel:hover {
+    border-color: rgba(0, 240, 255, 0.35);
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.3), 0 0 25px rgba(0, 240, 255, 0.1);
+}
+
+.home-vault-icon {
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+                box-shadow 0.4s ease,
+                background 0.3s ease;
+    flex-shrink: 0;
+}
+
+.home-vault-panel:hover .home-vault-icon {
+    transform: scale(1.15) rotate(5deg);
+    background: rgba(0, 240, 255, 0.2);
+    box-shadow: 0 0 25px rgba(0, 240, 255, 0.4);
+}
+
+/* Stats shimmer on hover */
+.vault-stat-value {
+    background: linear-gradient(90deg, #ffb800, #ffe066, #ffb800);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.home-vault-panel:hover .vault-stat-value {
+    animation: gold-shimmer 1.5s linear infinite;
+}
+
+/* Stake Now button */
+.home-vault-btn {
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease, letter-spacing 0.3s ease;
+}
+
+.home-vault-btn::before {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 60%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+    transform: skewX(-20deg);
+    transition: left 0s;
+}
+
+.home-vault-btn:hover::before {
+    left: 150%;
+    transition: left 0.5s ease;
+}
+
+.home-vault-btn:hover {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 8px 30px rgba(0, 240, 255, 0.6);
+    letter-spacing: 0.5px;
+}
+
+/* ---- Leaderboard ---- */
+
+.home-leaderboard-panel {
+    transition: border-color 0.35s ease, box-shadow 0.35s ease;
+}
+
+.home-leaderboard-panel:hover {
+    border-color: rgba(0, 240, 255, 0.25);
+}
+
+.leaderboard-tab-item {
+    position: relative;
+    transition: color 0.3s ease;
+}
+
+.leaderboard-tab-item::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0;
+    width: 100%; height: 2px;
+    background: var(--neon-blue);
+    box-shadow: 0 0 8px var(--neon-blue);
+    transform: scaleX(0);
+    transform-origin: center;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.leaderboard-tab-item:hover::after {
+    transform: scaleX(0.6);
+}
+
+.leaderboard-tab-item.active::after {
+    transform: scaleX(1);
+}
+
+.home-leaderboard-item {
+    transition: transform 0.3s ease, opacity 0.3s ease;
+    cursor: pointer;
+}
+
+.home-leaderboard-item:hover {
+    transform: translateX(6px);
+}
+
+.leaderboard-item-avatar {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.home-leaderboard-item:hover .leaderboard-item-avatar {
+    transform: scale(1.1);
+    box-shadow: 0 0 12px rgba(0, 240, 255, 0.4);
+}
+
+/* Top-rank avatars pulse */
+.leaderboard-item-avatar.top-avatar {
+    animation: glow-pulse 2.5s ease-in-out infinite;
+}
+
+/* ---- Mine Cells ---- */
+
+.mine-cell {
+    position: relative;
+    overflow: hidden;
+}
+
+.mine-cell::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at center, rgba(0, 240, 255, 0.15), transparent 70%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.mine-cell:hover:not(.revealed)::before {
+    opacity: 1;
+}
+
+/* ---- General Buttons ---- */
+
+.btn {
+    position: relative;
+    overflow: hidden;
+}
+
+.btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.04);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    border-radius: inherit;
+}
+
+.btn:hover::after {
+    opacity: 1;
+}
+
+.btn-glow {
+    transition: box-shadow 0.3s ease, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.btn-glow:hover {
+    box-shadow: 0 0 30px rgba(0, 240, 255, 0.8), 0 0 60px rgba(0, 240, 255, 0.3);
+    transform: translateY(-3px) scale(1.02);
+}
+
+.btn-glow:active {
+    transform: translateY(0) scale(0.98);
+    transition-duration: 0.1s;
+}
+
+/* ---- Step Cards (How it Works) ---- */
+
+.step-card {
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+                border-color 0.3s ease,
+                box-shadow 0.3s ease;
+}
+
+.step-card:hover {
+    transform: translateY(-8px) scale(1.02);
+    border-color: rgba(0, 240, 255, 0.4);
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.3), 0 0 20px rgba(0, 240, 255, 0.1);
+}
+
+.step-icon {
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+}
+
+.step-card:hover .step-icon {
+    transform: scale(1.2) rotate(10deg);
+    box-shadow: 0 0 25px var(--neon-blue);
+}
+
+/* ---- Footer Socials ---- */
+
+.home-footer-socials span {
+    display: inline-block;
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.3s ease;
+    cursor: pointer;
+}
+
+.home-footer-socials span:hover {
+    transform: translateY(-6px) scale(1.3);
+    filter: drop-shadow(0 0 8px rgba(0, 240, 255, 0.7));
+}
+
+/* ---- Live Indicator Pulse ---- */
+
+.live-indicator {
+    animation: glow-pulse 1.5s ease-in-out infinite;
+}
+
+/* ---- Points Section Pop ---- */
+
+.points-interactive:hover .star-icon {
+    display: inline-block;
+    animation: float 1s ease-in-out infinite;
+}
+
+/* ---- Input Focus Glow ---- */
+
+input[type="number"]:focus {
+    border-color: var(--neon-blue);
+    box-shadow: 0 0 0 3px rgba(0, 240, 255, 0.15), 0 0 20px rgba(0, 240, 255, 0.2);
+    outline: none;
+}
+
+/* ---- Wallet Pill Balance Hover ---- */
+
+.balance-section {
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.balance-section:hover #user-balance {
+    text-shadow: 0 0 15px var(--neon-blue);
+}
+
+/* ---- Toast Pop-in ---- */
+
+@keyframes toastSlideIn {
+    from { transform: translateX(110%); opacity: 0; }
+    to   { transform: translateX(0);   opacity: 1; }
+}
+
+.toast {
+    animation: toastSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* ---- Page Fade In ---- */
+
+@keyframes pageFadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.view {
+    animation: pageFadeIn 0.4s ease forwards;
+}
