@@ -189,7 +189,7 @@ export const WalletProvider = ({ children }) => {
 
         // Sync with backend
         if (address) {
-            const API_BASE = window.location.hostname === 'localhost' ? "http://localhost:3001" : "https://playfi-backend.vercel.app";
+            const API_BASE = window.location.hostname === 'localhost' ? "http://localhost:3001" : "https://server-chi-rose-76.vercel.app";
             try {
                 await fetch(`${API_BASE}/api/sync-stars`, {
                     method: 'POST',

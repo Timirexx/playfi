@@ -11,7 +11,7 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 app.use(cors({
-    origin: ['https://playfirepo.vercel.app', 'http://localhost:5173'],
+    origin: ['https://playfirepo.vercel.app', 'http://localhost:3000', 'http://localhost:5173'],
     methods: ['GET', 'POST'],
     credentials: true
 }));
