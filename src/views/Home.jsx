@@ -77,35 +77,36 @@ const Home = () => {
         <h2 className="home-section-title uppercase">Vault</h2>
         <p className="home-section-subtitle">Stake your HBAR and earn Play Points</p>
         
-        <div className="glass-panel home-vault-panel">
-          <div className="home-vault-header">
-            <div className="home-vault-icon">
-              🏦
+        <div className="home-vault-container">
+          {/* Main Vault Card */}
+          <div className="home-vault-main-card glass-panel">
+            <div className="home-vault-icon-large">
+               🏦
             </div>
-            <div>
+            <div className="home-vault-info">
               <h4 className="home-vault-title">Staking Vault</h4>
-              <p className="home-vault-desc">Stake HBAR, earn Play Points, <br/>and climb the leaderboard.</p>
+              <p className="home-vault-desc">Stake HBAR, earn Play Points, and climb the leaderboard.</p>
             </div>
+            <button className="home-vault-action-btn" onClick={() => navigate('/vault')}>
+              Stake Now
+            </button>
           </div>
           
-          <div className="home-vault-stats">
-            <div className="vault-stat-block">
+          {/* Stats Grid */}
+          <div className="home-vault-stats-grid">
+            <div className="vault-stat-card glass-panel">
               <div className="vault-stat-label">Total Staked</div>
-              <div className="vault-stat-value">1,250 HBAR</div>
+              <div className="vault-stat-value">1,250 <span className="vault-stat-currency">HBAR</span></div>
             </div>
-            <div className="vault-stat-block">
+            <div className="vault-stat-card glass-panel">
               <div className="vault-stat-label">APY</div>
-              <div className="vault-stat-value">12.5%</div>
+              <div className="vault-stat-value">12.5<span className="vault-stat-currency">%</span></div>
             </div>
-            <div className="vault-stat-block">
+            <div className="vault-stat-card glass-panel">
               <div className="vault-stat-label">Your Points</div>
-              <div className="vault-stat-value">720 PTS</div>
+              <div className="vault-stat-value">720 <span className="vault-stat-currency">PTS</span></div>
             </div>
           </div>
-
-          <button className="btn btn-hero btn-glow home-vault-btn" onClick={() => navigate('/vault')}>
-            Stake Now
-          </button>
         </div>
       </div>
 
