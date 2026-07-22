@@ -14,10 +14,12 @@ export const PLAYFI_VAULT_ABI = [
     "function getVaultBalance() public view returns (uint256)",
     "function authorizedGames(address) public view returns (bool)",
     "function setGameAuthorization(address gameContract, bool status) public",
+    "function transferOwnership(address newOwner) public",
     "event Deposited(address indexed user, uint256 amount)",
     "event Withdrawn(address indexed user, uint256 amount)",
     "event BetPlaced(address indexed user, uint256 amount)",
     "event GameResult(address indexed user, uint256 won, uint256 lost)",
     "event HouseFunded(uint256 amount)",
-    "event HouseWithdrawn(uint256 amount)"
+    "event HouseWithdrawn(uint256 amount)",
+    "event OwnershipTransferred(address indexed previousOwner, address indexed newOwner)"
 ];

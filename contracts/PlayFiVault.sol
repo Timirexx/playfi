@@ -14,8 +14,18 @@ contract PlayFiVault {
     // Internal balances mapping: user address => balance in tinybars
     mapping(address => uint256) public userBalances;
 
-    // Total liquidity provided by the house
+    // Total liquidity provided by the house. Game payouts are capped strictly
+    // to this amount so they can never dip into stakers' deposited balances.
     uint256 public houseLiquidity;
+
+    bool private locked;
+
+    modifier nonReentrant() {
+        require(!locked, "PlayFi: Reentrant call");
+        locked = true;
+        _;
+        locked = false;
+    }
 
     event Deposited(address indexed user, uint256 amount);
     event Withdrawn(address indexed user, uint256 amount);
@@ -23,6 +33,7 @@ contract PlayFiVault {
     event HouseFunded(uint256 amount);
     event HouseWithdrawn(uint256 amount);
     event BetPlaced(address indexed user, uint256 amount);
+    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 
     constructor() {
         owner = msg.sender;
@@ -58,40 +69,43 @@ contract PlayFiVault {
      * @dev Withdraw HBAR from the player's internal balance.
      * Follows CEI pattern to prevent reentrancy.
      */
-    function withdraw(uint256 amount) public {
+    function withdraw(uint256 amount) public nonReentrant {
+        require(amount > 0, "PlayFi: Withdraw amount must be greater than 0");
         require(userBalances[msg.sender] >= amount, "PlayFi: Insufficient balance");
-        
+
         // Effects
         userBalances[msg.sender] -= amount;
-        
+
         // Interactions
         (bool success, ) = payable(msg.sender).call{value: amount}("");
         require(success, "PlayFi: Transfer failed");
-        
+
         emit Withdrawn(msg.sender, amount);
     }
 
     /**
-     * @dev Backend calls this to settle a game result.
+     * @dev Backend calls this to settle a game result where the stake was drawn
+     * from the user's internal balance (balance-based games).
+     * Payouts are capped strictly to houseLiquidity so a win can never be paid
+     * out of another user's deposited (staked) balance.
      */
-    function settleGame(address user, uint256 winAmount, uint256 lossAmount) public onlyAuthorized {
+    function settleGame(address user, uint256 winAmount, uint256 lossAmount) public onlyAuthorized nonReentrant {
         if (lossAmount > 0) {
             require(userBalances[user] >= lossAmount, "PlayFi: User has insufficient balance to cover loss");
             userBalances[user] -= lossAmount;
             houseLiquidity += lossAmount;
         }
-        
+
         if (winAmount > 0) {
-            require(address(this).balance >= winAmount, "PlayFi: Vault has insufficient liquidity for payout");
-            if (houseLiquidity >= winAmount) {
-                houseLiquidity -= winAmount;
-            }
-            
-            // Transfer directly to the user's wallet instead of adding to userBalances
+            // Effects first (CEI): cap to houseLiquidity, never touch staked deposits.
+            require(houseLiquidity >= winAmount, "PlayFi: Insufficient house liquidity for payout");
+            houseLiquidity -= winAmount;
+
+            // Interactions
             (bool success, ) = payable(user).call{value: winAmount}("");
             require(success, "PlayFi: Transfer failed");
         }
-        
+
         emit GameResult(user, winAmount, lossAmount);
     }
 
@@ -111,16 +125,13 @@ contract PlayFiVault {
      * Since the wager was already added to houseLiquidity in placeBet(),
      * we only need to transfer winnings if the player won.
      */
-    function settleGame(address user, uint256 winAmount) public onlyAuthorized {
+    function settleGame(address user, uint256 winAmount) public onlyAuthorized nonReentrant {
         if (winAmount > 0) {
-            require(address(this).balance >= winAmount, "PlayFi: Vault has insufficient liquidity for payout");
-            if (houseLiquidity >= winAmount) {
-                houseLiquidity -= winAmount;
-            } else {
-                houseLiquidity = 0; // Prevent underflow if manually funded
-            }
+            // Effects first (CEI): cap to houseLiquidity, never touch staked deposits.
+            require(houseLiquidity >= winAmount, "PlayFi: Insufficient house liquidity for payout");
+            houseLiquidity -= winAmount;
 
-            // Transfer directly to the user's wallet
+            // Interactions
             (bool success, ) = payable(user).call{value: winAmount}("");
             require(success, "PlayFi: Transfer failed");
         }
@@ -139,15 +150,23 @@ contract PlayFiVault {
     /**
      * @dev Withdraw house profits/liquidity.
      */
-    function withdrawHouse(uint256 amount) public onlyOwner {
-        require(address(this).balance >= amount, "PlayFi: Insufficient vault balance");
+    function withdrawHouse(uint256 amount) public onlyOwner nonReentrant {
         require(houseLiquidity >= amount, "PlayFi: Insufficient house liquidity");
-        
+
         houseLiquidity -= amount;
         (bool success, ) = payable(owner).call{value: amount}("");
         require(success, "PlayFi: House transfer failed");
-        
+
         emit HouseWithdrawn(amount);
+    }
+
+    /**
+     * @dev Transfer contract ownership to a new address.
+     */
+    function transferOwnership(address newOwner) public onlyOwner {
+        require(newOwner != address(0), "PlayFi: New owner is the zero address");
+        owner = newOwner;
+        emit OwnershipTransferred(msg.sender, newOwner);
     }
 
     /**
