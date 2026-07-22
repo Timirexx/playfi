@@ -2,20 +2,31 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useWallet } from '../context/WalletContext';
 
-const GameCard = ({ icon, title, description, onClick }) => (
-  <div className="home-game-card glass-panel home-game-card-layout">
-    <div className="home-game-card-header">
-      <div className="home-game-icon">
-        {icon}
+const PremiumGameCard = ({ icon, title, description, onClick, accentColor, bgGradient, badges }) => (
+  <div className="pgc-card" onClick={onClick} style={{ '--pgc-accent': accentColor }}>
+    <div className="pgc-bg" style={{ background: bgGradient }}></div>
+    <div className="pgc-glow-orb"></div>
+    <div className="pgc-shimmer"></div>
+    <div className="pgc-content">
+      <div className="pgc-icon-wrap">
+        <div className="pgc-icon-ring"></div>
+        <span className="pgc-icon">{icon}</span>
       </div>
-      <div>
-        <h4 className="home-game-title">{title}</h4>
-        <p className="home-game-desc">{description}</p>
+      <h4 className="pgc-title">{title}</h4>
+      <p className="pgc-desc">{description}</p>
+      <div className="pgc-badges">
+        {badges.map((b, i) => (
+          <span key={i} className="pgc-badge">{b}</span>
+        ))}
       </div>
+      <button className="pgc-btn" onClick={(e) => { e.stopPropagation(); onClick(); }}>
+        <span>Play Now</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+          <polyline points="12 5 19 12 12 19"></polyline>
+        </svg>
+      </button>
     </div>
-    <button className="btn btn-hero btn-glow home-game-btn" onClick={onClick}>
-      Play Now
-    </button>
   </div>
 );
 
@@ -242,27 +253,293 @@ const Home = () => {
       </div>
 
       {/* Play Games Section */}
+      <style>{`
+        /* ============================================
+           HOME — PREMIUM GAME CARDS
+        ============================================ */
+        .pgc-section-head {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+          margin-bottom: 0.5rem;
+        }
+        .pgc-section-icon {
+          font-size: 2rem;
+          filter: drop-shadow(0 0 12px rgba(0,240,255,0.6));
+          animation: pgc-icon-pulse 3s ease-in-out infinite;
+        }
+        @keyframes pgc-icon-pulse {
+          0%, 100% { filter: drop-shadow(0 0 12px rgba(0,240,255,0.6)); }
+          50% { filter: drop-shadow(0 0 24px rgba(0,240,255,1)); }
+        }
+        .pgc-section-title {
+          font-family: var(--font-heading);
+          font-size: clamp(1.8rem, 4vw, 2.8rem);
+          font-weight: 900;
+          letter-spacing: 3px;
+          text-transform: uppercase;
+          margin: 0;
+          background: linear-gradient(90deg, #fff 30%, #00f0ff 70%, #fff);
+          background-size: 200% auto;
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          animation: pgc-title-shimmer 5s linear infinite;
+        }
+        @keyframes pgc-title-shimmer {
+          0% { background-position: 0% center; }
+          100% { background-position: 200% center; }
+        }
+        .pgc-section-sub {
+          color: var(--text-muted);
+          font-size: 1rem;
+          margin: 0.4rem 0 2.5rem;
+          letter-spacing: 0.5px;
+        }
+        .pgc-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 1.5rem;
+        }
+
+        /* Card shell */
+        .pgc-card {
+          position: relative;
+          border-radius: 24px;
+          border: 1px solid rgba(255,255,255,0.07);
+          overflow: hidden;
+          cursor: pointer;
+          transition: transform 0.35s cubic-bezier(0.175,0.885,0.32,1.275),
+                      box-shadow 0.35s ease,
+                      border-color 0.35s ease;
+          min-height: 380px;
+          display: flex;
+          flex-direction: column;
+        }
+        .pgc-card:hover {
+          transform: translateY(-10px) scale(1.02);
+          border-color: color-mix(in srgb, var(--pgc-accent) 50%, transparent);
+          box-shadow:
+            0 20px 60px rgba(0,0,0,0.5),
+            0 0 40px color-mix(in srgb, var(--pgc-accent) 20%, transparent);
+        }
+        .pgc-card:active { transform: translateY(-4px) scale(1.01); }
+
+        /* Unique bg gradient per card */
+        .pgc-bg {
+          position: absolute;
+          inset: 0;
+          opacity: 0.5;
+          transition: opacity 0.4s ease;
+        }
+        .pgc-card:hover .pgc-bg { opacity: 0.75; }
+
+        /* Glow orb that moves on hover */
+        .pgc-glow-orb {
+          position: absolute;
+          width: 200px; height: 200px;
+          border-radius: 50%;
+          background: var(--pgc-accent);
+          filter: blur(70px);
+          opacity: 0;
+          top: -50px; right: -50px;
+          transition: opacity 0.4s ease, transform 0.4s ease;
+          pointer-events: none;
+        }
+        .pgc-card:hover .pgc-glow-orb {
+          opacity: 0.18;
+          transform: translate(-10px, 10px);
+        }
+
+        /* Shimmer sweep */
+        .pgc-shimmer {
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(105deg,
+            transparent 30%,
+            rgba(255,255,255,0.06) 50%,
+            transparent 70%);
+          transform: translateX(-100%);
+          transition: transform 0.6s ease;
+          pointer-events: none;
+        }
+        .pgc-card:hover .pgc-shimmer { transform: translateX(100%); }
+
+        /* Content */
+        .pgc-content {
+          position: relative;
+          z-index: 2;
+          padding: 2rem 1.8rem 1.8rem;
+          display: flex;
+          flex-direction: column;
+          flex: 1;
+        }
+
+        /* Icon */
+        .pgc-icon-wrap {
+          position: relative;
+          width: 80px; height: 80px;
+          margin-bottom: 1.5rem;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .pgc-icon-ring {
+          position: absolute;
+          inset: 0;
+          border-radius: 50%;
+          border: 1.5px solid color-mix(in srgb, var(--pgc-accent) 40%, transparent);
+          background: color-mix(in srgb, var(--pgc-accent) 8%, transparent);
+          transition: all 0.3s ease;
+        }
+        .pgc-card:hover .pgc-icon-ring {
+          border-color: color-mix(in srgb, var(--pgc-accent) 70%, transparent);
+          box-shadow: 0 0 20px color-mix(in srgb, var(--pgc-accent) 30%, transparent);
+        }
+        .pgc-icon {
+          font-size: 2.5rem;
+          position: relative;
+          z-index: 1;
+          transition: transform 0.3s ease;
+          display: block;
+          text-align: center;
+          line-height: 80px;
+        }
+        .pgc-card:hover .pgc-icon { transform: scale(1.15) rotate(-5deg); }
+
+        /* Typography */
+        .pgc-title {
+          font-family: var(--font-heading);
+          font-size: 1.5rem;
+          font-weight: 900;
+          letter-spacing: 1px;
+          text-transform: uppercase;
+          color: #fff;
+          margin: 0 0 0.6rem;
+          transition: color 0.3s ease;
+        }
+        .pgc-card:hover .pgc-title {
+          color: var(--pgc-accent);
+          text-shadow: 0 0 20px color-mix(in srgb, var(--pgc-accent) 50%, transparent);
+        }
+        .pgc-desc {
+          color: rgba(255,255,255,0.55);
+          font-size: 0.9rem;
+          line-height: 1.6;
+          margin: 0 0 1.2rem;
+        }
+
+        /* Badges */
+        .pgc-badges {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.5rem;
+          margin-bottom: 1.8rem;
+          flex: 1;
+          align-items: flex-start;
+        }
+        .pgc-badge {
+          font-size: 0.68rem;
+          font-weight: 700;
+          letter-spacing: 0.5px;
+          text-transform: uppercase;
+          padding: 0.3rem 0.75rem;
+          border-radius: 100px;
+          background: rgba(255,255,255,0.05);
+          border: 1px solid rgba(255,255,255,0.1);
+          color: rgba(255,255,255,0.6);
+          transition: all 0.3s ease;
+        }
+        .pgc-card:hover .pgc-badge {
+          background: color-mix(in srgb, var(--pgc-accent) 8%, transparent);
+          border-color: color-mix(in srgb, var(--pgc-accent) 30%, transparent);
+          color: var(--pgc-accent);
+        }
+
+        /* Button */
+        .pgc-btn {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.6rem;
+          width: 100%;
+          padding: 1rem;
+          border-radius: 12px;
+          border: none;
+          background: linear-gradient(90deg,
+            color-mix(in srgb, var(--pgc-accent) 80%, transparent),
+            color-mix(in srgb, var(--pgc-accent) 60%, #0080ff));
+          color: #000;
+          font-family: var(--font-heading);
+          font-weight: 900;
+          font-size: 1rem;
+          letter-spacing: 1px;
+          text-transform: uppercase;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          box-shadow: 0 4px 20px color-mix(in srgb, var(--pgc-accent) 30%, transparent);
+          position: relative;
+          overflow: hidden;
+        }
+        .pgc-btn::after {
+          content: '';
+          position: absolute;
+          top: 0; left: -100%;
+          width: 60%; height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+          transform: skewX(-20deg);
+          animation: pgc-btn-shine 3s infinite;
+        }
+        @keyframes pgc-btn-shine { 100% { left: 200%; } }
+        .pgc-btn:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 30px color-mix(in srgb, var(--pgc-accent) 50%, transparent);
+          color: #fff;
+        }
+        .pgc-btn svg { transition: transform 0.25s ease; }
+        .pgc-btn:hover svg { transform: translateX(4px); }
+
+        @media (max-width: 900px) {
+          .pgc-grid { grid-template-columns: 1fr; max-width: 420px; margin: 0 auto; }
+        }
+        @media (min-width: 600px) and (max-width: 900px) {
+          .pgc-grid { grid-template-columns: repeat(2, 1fr); max-width: none; }
+        }
+      `}</style>
+
       <div className="home-section-container">
-        <h2 className="home-section-title">PLAY <span style={{ color: '#00f0ff' }}>GAMES</span></h2>
-        <p className="home-section-subtitle">Choose your game and start playing</p>
-        <div className="home-games-grid">
-          <GameCard 
-            icon="💣" 
-            title="Mines" 
-            description="Uncover safe tiles and avoid the mines." 
+        <div className="pgc-section-head">
+          <span className="pgc-section-icon">🎮</span>
+          <h2 className="pgc-section-title">Play Games</h2>
+        </div>
+        <p className="pgc-section-sub">Choose your game, place your bet, and win on-chain</p>
+        <div className="pgc-grid">
+          <PremiumGameCard
+            icon="💣"
+            title="Mines"
+            description="Navigate the minefield. Reveal safe tiles and cash out before disaster strikes."
             onClick={() => navigate('/mines')}
+            accentColor="#00f0ff"
+            bgGradient="linear-gradient(135deg, rgba(0,20,40,0.9) 0%, rgba(0,5,20,0.95) 100%)"
+            badges={['⚡ High Risk', '💰 Up to 1000x', '🟢 Live']}
           />
-          <GameCard 
-            icon="🎡" 
-            title="Spin to Win" 
-            description="Spin the wheel and win up to 40x your bet." 
+          <PremiumGameCard
+            icon="🎡"
+            title="Spin to Win"
+            description="Spin the neon wheel of fortune. Predict the multiplier and ride the momentum."
             onClick={() => navigate('/spin')}
+            accentColor="#a855f7"
+            bgGradient="linear-gradient(135deg, rgba(20,5,40,0.9) 0%, rgba(5,0,25,0.95) 100%)"
+            badges={['🎯 Med Risk', '💰 Up to 40x', '🟢 Live']}
           />
-          <GameCard 
-            icon="🚪" 
-            title="Two Doors" 
-            description="Pick a door and double your stake." 
+          <PremiumGameCard
+            icon="🚪"
+            title="Two Doors"
+            description="Two doors, one winner. Choose your fate and double your HBAR in seconds."
             onClick={() => navigate('/two-doors')}
+            accentColor="#ff6b35"
+            bgGradient="linear-gradient(135deg, rgba(30,8,0,0.9) 0%, rgba(15,3,0,0.95) 100%)"
+            badges={['🎲 50/50 Odds', '💰 2x Payout', '🟢 Live']}
           />
         </div>
       </div>
