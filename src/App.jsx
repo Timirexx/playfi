@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from './components/layout/Navbar';
+import Footer from './components/layout/Footer';
 
 import Landing from './views/Landing';
 import Home from './views/Home';
@@ -33,6 +34,7 @@ const App = () => {
 
         <TxOverlay />
         <ToastContainer />
+        <Footer />
       </div>
     </Router>
   );
