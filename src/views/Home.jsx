@@ -316,11 +316,7 @@ const Home = () => {
         </div>
 
         <div className="glass-panel home-leaderboard-panel">
-          <div className="home-leaderboard-tabs">
-            <div className="leaderboard-tab-item active">All Players</div>
-            <div className="leaderboard-tab-item hover-white">Vault Leaderboard</div>
-            <div className="leaderboard-tab-item hover-white">Games Leaderboard</div>
-          </div>
+
           
           <div className="home-leaderboard-list">
             {/* Mock Leaderboard Items based on reference */}
