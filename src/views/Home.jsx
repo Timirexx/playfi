@@ -30,6 +30,37 @@ const PremiumGameCard = ({ icon, title, description, onClick, accentColor, bgGra
   </div>
 );
 
+const ComingSoonCard = ({ icon, title, description, accentColor, bgGradient, badges, onPreview }) => (
+  <div className="pgc-card csc-card" onClick={onPreview} style={{ '--pgc-accent': accentColor }}>
+    <div className="pgc-bg" style={{ background: bgGradient }}></div>
+    <div className="csc-overlay"></div>
+    <div className="pgc-content">
+      {/* Coming Soon badge */}
+      <div className="csc-badge-wrap">
+        <span className="csc-badge">🔒 Mainnet Exclusive</span>
+      </div>
+      <div className="pgc-icon-wrap" style={{ filter: 'grayscale(0.5) brightness(0.7)' }}>
+        <div className="pgc-icon-ring"></div>
+        <span className="pgc-icon">{icon}</span>
+      </div>
+      <h4 className="pgc-title csc-title">{title}</h4>
+      <p className="pgc-desc">{description}</p>
+      <div className="pgc-badges">
+        {badges.map((b, i) => (
+          <span key={i} className="pgc-badge csc-pill">{b}</span>
+        ))}
+      </div>
+      <button className="pgc-btn csc-btn" onClick={(e) => { e.stopPropagation(); onPreview(); }}>
+        <span>Coming Soon</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+        </svg>
+      </button>
+    </div>
+  </div>
+);
+
 const Home = () => {
   const navigate = useNavigate();
   const { address: userAddress, updateStarPoints } = useWallet();
@@ -37,6 +68,7 @@ const Home = () => {
   const [lastClaim, setLastClaim] = useState(0);
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [successAnim, setSuccessAnim] = useState(false);
+  const [showComingSoonModal, setShowComingSoonModal] = useState(false);
 
   useEffect(() => {
     if (!userAddress) return;
@@ -505,6 +537,219 @@ const Home = () => {
         @media (min-width: 600px) and (max-width: 900px) {
           .pgc-grid { grid-template-columns: repeat(2, 1fr); max-width: none; }
         }
+
+        /* ============================================
+           COMING SOON CARDS
+        ============================================ */
+        .csc-card {
+          filter: saturate(0.4) brightness(0.75);
+          transition: filter 0.35s ease,
+                      transform 0.35s cubic-bezier(0.175,0.885,0.32,1.275),
+                      box-shadow 0.35s ease,
+                      border-color 0.35s ease !important;
+        }
+        .csc-card:hover {
+          filter: saturate(0.65) brightness(0.9);
+          transform: translateY(-6px) scale(1.01) !important;
+        }
+        .csc-overlay {
+          position: absolute;
+          inset: 0;
+          background: rgba(0,0,0,0.45);
+          z-index: 1;
+          pointer-events: none;
+        }
+        .csc-badge-wrap {
+          position: absolute;
+          top: 1.2rem;
+          right: 1.2rem;
+          z-index: 10;
+        }
+        .csc-badge {
+          font-size: 0.7rem;
+          font-weight: 800;
+          letter-spacing: 1px;
+          text-transform: uppercase;
+          padding: 0.3rem 0.8rem;
+          border-radius: 100px;
+          background: rgba(255,184,0,0.12);
+          border: 1px solid rgba(255,184,0,0.35);
+          color: #ffb800;
+          box-shadow: 0 0 12px rgba(255,184,0,0.2);
+          animation: csc-badge-pulse 3s ease-in-out infinite;
+        }
+        @keyframes csc-badge-pulse {
+          0%, 100% { box-shadow: 0 0 12px rgba(255,184,0,0.2); }
+          50% { box-shadow: 0 0 22px rgba(255,184,0,0.45); }
+        }
+        .csc-title { color: rgba(255,255,255,0.5) !important; }
+        .csc-card:hover .csc-title { color: rgba(255,255,255,0.8) !important; text-shadow: none !important; }
+        .csc-pill {
+          background: rgba(255,255,255,0.03) !important;
+          border-color: rgba(255,255,255,0.06) !important;
+          color: rgba(255,255,255,0.3) !important;
+        }
+        .csc-btn {
+          background: rgba(255,255,255,0.06) !important;
+          color: rgba(255,255,255,0.4) !important;
+          border: 1px solid rgba(255,255,255,0.1) !important;
+          box-shadow: none !important;
+          cursor: pointer;
+        }
+        .csc-btn::after { display: none; }
+        .csc-card:hover .csc-btn {
+          background: rgba(255,184,0,0.1) !important;
+          border-color: rgba(255,184,0,0.3) !important;
+          color: #ffb800 !important;
+        }
+
+        /* ============================================
+           COMING SOON MODAL
+        ============================================ */
+        .csm-backdrop {
+          position: fixed;
+          inset: 0;
+          background: rgba(0,0,0,0.75);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          z-index: 9000;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 1.5rem;
+          animation: csm-fade-in 0.3s ease;
+        }
+        @keyframes csm-fade-in {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        .csm-box {
+          background: rgba(5, 8, 18, 0.92);
+          border: 1px solid rgba(0,240,255,0.2);
+          border-radius: 28px;
+          padding: 3rem 2.5rem;
+          max-width: 500px;
+          width: 100%;
+          text-align: center;
+          position: relative;
+          box-shadow:
+            0 0 60px rgba(0,240,255,0.08),
+            0 40px 80px rgba(0,0,0,0.6);
+          animation: csm-scale-in 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes csm-scale-in {
+          from { opacity: 0; transform: scale(0.8) translateY(20px); }
+          to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .csm-glow {
+          position: absolute;
+          width: 300px; height: 300px;
+          background: radial-gradient(circle, rgba(0,240,255,0.12) 0%, transparent 70%);
+          top: -80px; left: 50%;
+          transform: translateX(-50%);
+          pointer-events: none;
+          border-radius: 50%;
+          animation: csm-glow-pulse 4s ease-in-out infinite;
+        }
+        @keyframes csm-glow-pulse {
+          0%, 100% { opacity: 0.6; transform: translateX(-50%) scale(1); }
+          50% { opacity: 1; transform: translateX(-50%) scale(1.1); }
+        }
+        .csm-close {
+          position: absolute;
+          top: 1.2rem; right: 1.2rem;
+          background: rgba(255,255,255,0.06);
+          border: 1px solid rgba(255,255,255,0.1);
+          border-radius: 50%;
+          width: 36px; height: 36px;
+          display: flex; align-items: center; justify-content: center;
+          cursor: pointer;
+          color: rgba(255,255,255,0.5);
+          font-size: 1.2rem;
+          line-height: 1;
+          transition: all 0.25s ease;
+        }
+        .csm-close:hover {
+          background: rgba(255,255,255,0.12);
+          color: #fff;
+          border-color: rgba(255,255,255,0.25);
+        }
+        .csm-rocket {
+          font-size: 4rem;
+          margin-bottom: 1.5rem;
+          display: block;
+          filter: drop-shadow(0 0 20px rgba(0,240,255,0.6));
+          animation: csm-rocket-float 3s ease-in-out infinite;
+        }
+        @keyframes csm-rocket-float {
+          0%, 100% { transform: translateY(0) rotate(-5deg); }
+          50% { transform: translateY(-10px) rotate(5deg); }
+        }
+        .csm-title {
+          font-family: var(--font-heading);
+          font-size: 1.8rem;
+          font-weight: 900;
+          letter-spacing: 2px;
+          text-transform: uppercase;
+          margin: 0 0 1rem;
+          background: linear-gradient(90deg, #00f0ff, #fff 55%, #00f0ff);
+          background-size: 200% auto;
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          animation: pgc-title-shimmer 4s linear infinite;
+        }
+        .csm-msg {
+          color: rgba(255,255,255,0.6);
+          font-size: 0.95rem;
+          line-height: 1.7;
+          margin: 0 0 2rem;
+        }
+        .csm-games-row {
+          display: flex;
+          justify-content: center;
+          gap: 1rem;
+          margin-bottom: 2rem;
+        }
+        .csm-game-pill {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 0.5rem 1.2rem;
+          background: rgba(255,255,255,0.04);
+          border: 1px solid rgba(0,240,255,0.15);
+          border-radius: 100px;
+          font-size: 0.85rem;
+          color: rgba(255,255,255,0.7);
+          font-weight: 600;
+        }
+        .csm-got-it {
+          background: linear-gradient(90deg, #00f0ff, #0080ff);
+          border: none;
+          color: #000;
+          font-family: var(--font-heading);
+          font-weight: 900;
+          font-size: 1rem;
+          letter-spacing: 1px;
+          text-transform: uppercase;
+          padding: 1rem 3rem;
+          border-radius: 100px;
+          cursor: pointer;
+          box-shadow: 0 0 25px rgba(0,240,255,0.4);
+          transition: all 0.3s ease;
+          position: relative;
+          overflow: hidden;
+        }
+        .csm-got-it:hover {
+          box-shadow: 0 0 40px rgba(0,240,255,0.7);
+          transform: translateY(-2px) scale(1.04);
+          color: #fff;
+        }
+        @media (max-width: 500px) {
+          .csm-box { padding: 2.5rem 1.5rem; }
+          .csm-title { font-size: 1.4rem; }
+          .csm-games-row { flex-direction: column; align-items: center; }
+        }
       `}</style>
 
       <div className="home-section-container">
@@ -541,8 +786,47 @@ const Home = () => {
             bgGradient="linear-gradient(135deg, rgba(30,8,0,0.9) 0%, rgba(15,3,0,0.95) 100%)"
             badges={['🎲 50/50 Odds', '💰 2x Payout', '🟢 Live']}
           />
+          <ComingSoonCard
+            icon="🪙"
+            title="Coin Flip"
+            description="The purest 50/50 gamble on Hedera. Heads or tails, double or nothing — fast and fair."
+            accentColor="#ffb800"
+            bgGradient="linear-gradient(135deg, rgba(30,20,0,0.95) 0%, rgba(15,10,0,0.98) 100%)"
+            badges={['🎲 50/50 Odds', '💰 2x Payout', '🔒 Mainnet']}
+            onPreview={() => setShowComingSoonModal(true)}
+          />
+          <ComingSoonCard
+            icon="🔴"
+            title="Red or Blue"
+            description="Choose your color and bet on the outcome. Simple rules, electrifying results."
+            accentColor="#ef4444"
+            bgGradient="linear-gradient(135deg, rgba(25,0,5,0.95) 0%, rgba(10,0,3,0.98) 100%)"
+            badges={['⚡ High Energy', '💰 2x Payout', '🔒 Mainnet']}
+            onPreview={() => setShowComingSoonModal(true)}
+          />
         </div>
       </div>
+
+      {/* Coming Soon Modal */}
+      {showComingSoonModal && (
+        <div className="csm-backdrop" onClick={() => setShowComingSoonModal(false)}>
+          <div className="csm-box" onClick={(e) => e.stopPropagation()}>
+            <div className="csm-glow"></div>
+            <button className="csm-close" onClick={() => setShowComingSoonModal(false)} aria-label="Close">✕</button>
+            <span className="csm-rocket">🚀</span>
+            <h3 className="csm-title">Launching on Mainnet</h3>
+            <p className="csm-msg">
+              <strong style={{ color: '#fff' }}>Coin Flip</strong> and <strong style={{ color: '#fff' }}>Red or Blue</strong> will be available when PlayFi launches on Mainnet.
+              Stay tuned for exciting rewards and new gameplay!
+            </p>
+            <div className="csm-games-row">
+              <div className="csm-game-pill">🪙 Coin Flip</div>
+              <div className="csm-game-pill">🔴 Red or Blue</div>
+            </div>
+            <button className="csm-got-it" onClick={() => setShowComingSoonModal(false)}>Got It!</button>
+          </div>
+        </div>
+      )}
 
       {/* Vault Section */}
       <div className="home-section-container">
