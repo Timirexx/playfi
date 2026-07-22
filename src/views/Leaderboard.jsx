@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useWallet } from '../context/WalletContext';
 
 const Leaderboard = () => {
+    const navigate = useNavigate();
     const { isConnected, address, starPoints } = useWallet();
     const [players, setPlayers] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -57,8 +59,38 @@ const Leaderboard = () => {
                 
                 /* Header */
                 .ld-header {
+                    display: flex;
+                    align-items: center;
+                    position: relative;
+                    padding: 1.5rem 0 2.5rem;
+                }
+                .ld-back-btn {
+                    position: absolute;
+                    left: 0;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                    padding: 0.5rem 1.2rem;
+                    border-radius: 100px;
+                    border: 1px solid rgba(255,255,255,0.12);
+                    background: rgba(255,255,255,0.04);
+                    color: var(--text-main);
+                    font-family: var(--font-heading);
+                    font-size: 0.85rem;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                    backdrop-filter: blur(8px);
+                    text-decoration: none;
+                    white-space: nowrap;
+                }
+                .ld-back-btn:hover {
+                    background: rgba(255,255,255,0.08);
+                    border-color: rgba(255,255,255,0.25);
+                    transform: translateX(-2px);
+                }
+                .ld-title-wrap {
                     text-align: center;
-                    padding: 3rem 0;
+                    flex: 1;
                 }
                 .ld-title {
                     font-family: var(--font-heading);
@@ -234,6 +266,9 @@ const Leaderboard = () => {
                 }
 
                 @media (max-width: 900px) {
+                    .ld-header { flex-direction: column; gap: 1.5rem; padding-top: 1rem; }
+                    .ld-back-btn { position: relative; left: auto; }
+                    
                     .ld-podium-wrap {
                         flex-direction: column;
                         align-items: center;
@@ -262,10 +297,19 @@ const Leaderboard = () => {
 
             <div className="ld-page">
                 <div className="ld-header">
-                    <h2 className="ld-title">PLAYFI LEADERBOARD</h2>
-                    <p className="ld-subtitle">
-                        One unified ranking. Play games, stake HBAR in the Vault, and earn Play Points to climb to the top of the Hall of Fame.
-                    </p>
+                    <button className="ld-back-btn" onClick={() => navigate('/')}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <line x1="19" y1="12" x2="5" y2="12"></line>
+                            <polyline points="12 19 5 12 12 5"></polyline>
+                        </svg>
+                        Back to Hub
+                    </button>
+                    <div className="ld-title-wrap">
+                        <h2 className="ld-title">PLAYFI LEADERBOARD</h2>
+                        <p className="ld-subtitle">
+                            One unified ranking. Play games, stake HBAR in the Vault, and earn Play Points to climb to the top of the Hall of Fame.
+                        </p>
+                    </div>
                 </div>
 
                 {loading && players.length === 0 ? (
