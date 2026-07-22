@@ -306,93 +306,452 @@ const Home = () => {
       </div>
 
       {/* Leaderboard Section */}
-      <div className="home-section-container" style={{ marginBottom: '4rem' }}>
-        <style>{`
-          .hm-lb-clickable {
-            cursor: pointer;
-            transition:
-              transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275),
-              box-shadow 0.3s ease,
-              border-color 0.3s ease;
-            position: relative;
-            text-decoration: none;
-            display: block;
-          }
-          .hm-lb-clickable:hover {
-            transform: translateY(-6px);
-            box-shadow: 0 16px 48px rgba(0, 240, 255, 0.18), 0 0 0 1px rgba(0, 240, 255, 0.35);
-            border-color: rgba(0, 240, 255, 0.35) !important;
-          }
-          .hm-lb-clickable:active {
-            transform: translateY(-2px);
-          }
-          .hm-lb-view-all {
-            display: flex;
-            align-items: center;
-            justify-content: flex-end;
-            gap: 0.4rem;
-            margin-top: 1.25rem;
-            font-size: 0.85rem;
-            font-weight: 700;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            color: #00f0ff;
-            opacity: 0.8;
-            transition: opacity 0.2s ease, gap 0.2s ease;
-          }
-          .hm-lb-clickable:hover .hm-lb-view-all {
-            opacity: 1;
-            gap: 0.7rem;
-          }
-          .hm-lb-arrow {
-            font-size: 1rem;
-            transition: transform 0.25s ease;
-          }
-          .hm-lb-clickable:hover .hm-lb-arrow {
-            transform: translateX(4px);
-          }
-        `}</style>
+      <style>{`
+        /* ============================================
+           HOME — PREMIUM LEADERBOARD PREVIEW
+        ============================================ */
+        .hm-lb-section {
+          position: relative;
+          margin-bottom: 4rem;
+          overflow: hidden;
+          border-radius: 28px;
+          padding: 3rem 2.5rem;
+          background: linear-gradient(135deg,
+            rgba(0, 10, 20, 0.97) 0%,
+            rgba(0, 20, 35, 0.95) 50%,
+            rgba(0, 10, 20, 0.97) 100%);
+          border: 1px solid rgba(0, 240, 255, 0.15);
+          box-shadow:
+            0 0 60px rgba(0, 240, 255, 0.06),
+            0 30px 80px rgba(0, 0, 0, 0.5);
+          cursor: pointer;
+          transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .hm-lb-section:hover {
+          border-color: rgba(0, 240, 255, 0.3);
+          box-shadow:
+            0 0 80px rgba(0, 240, 255, 0.12),
+            0 30px 80px rgba(0, 0, 0, 0.5);
+          transform: translateY(-4px);
+        }
+        .hm-lb-section:active { transform: translateY(-1px); }
 
-        <h2 className="home-section-title uppercase">Leaderboard</h2>
-        <div className="home-leaderboard-header">
-          <p className="home-leaderboard-subtitle">Top players on PlayFi</p>
-          <div className="home-leaderboard-live">
-            Updated Live <span className="live-indicator"></span>
+        /* Animated background glow blobs */
+        .hm-lb-bg {
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          overflow: hidden;
+          z-index: 0;
+          border-radius: 28px;
+        }
+        .hm-lb-blob {
+          position: absolute;
+          border-radius: 50%;
+          filter: blur(80px);
+          opacity: 0.12;
+          animation: hm-lb-drift 12s ease-in-out infinite;
+        }
+        .hm-lb-blob-1 {
+          width: 350px; height: 350px;
+          background: #00f0ff;
+          top: -80px; left: -60px;
+          animation-delay: 0s;
+        }
+        .hm-lb-blob-2 {
+          width: 280px; height: 280px;
+          background: #0080ff;
+          bottom: -60px; right: -40px;
+          animation-delay: -5s;
+        }
+        .hm-lb-blob-3 {
+          width: 200px; height: 200px;
+          background: #7c3aed;
+          top: 50%; right: 25%;
+          animation-delay: -9s;
+          opacity: 0.08;
+        }
+        @keyframes hm-lb-drift {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          33% { transform: translate(20px, -15px) scale(1.05); }
+          66% { transform: translate(-10px, 20px) scale(0.97); }
+        }
+
+        /* Floating particles */
+        .hm-lb-particles {
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          z-index: 0;
+          overflow: hidden;
+        }
+        .hm-lb-particle {
+          position: absolute;
+          width: 2px; height: 2px;
+          background: #00f0ff;
+          border-radius: 50%;
+          animation: hm-lb-float-up linear infinite;
+          opacity: 0;
+        }
+        @keyframes hm-lb-float-up {
+          0% { transform: translateY(100%) scale(0); opacity: 0; }
+          10% { opacity: 0.6; }
+          90% { opacity: 0.3; }
+          100% { transform: translateY(-200px) scale(1.5); opacity: 0; }
+        }
+
+        /* Section top row */
+        .hm-lb-toprow {
+          position: relative;
+          z-index: 2;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 2.5rem;
+        }
+        .hm-lb-headline {
+          display: flex;
+          flex-direction: column;
+          gap: 0.3rem;
+        }
+        .hm-lb-eyebrow {
+          font-size: 0.7rem;
+          letter-spacing: 3px;
+          text-transform: uppercase;
+          color: #00f0ff;
+          opacity: 0.7;
+        }
+        .hm-lb-heading {
+          font-family: var(--font-heading);
+          font-size: clamp(1.6rem, 3vw, 2.2rem);
+          font-weight: 900;
+          letter-spacing: 3px;
+          text-transform: uppercase;
+          margin: 0;
+          background: linear-gradient(90deg, #00f0ff, #fff 60%, #00f0ff);
+          background-size: 200% auto;
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          animation: hm-lb-shimmer 4s linear infinite;
+        }
+        @keyframes hm-lb-shimmer {
+          0% { background-position: 0% center; }
+          100% { background-position: 200% center; }
+        }
+        .hm-lb-live-badge {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 0.4rem 1rem;
+          background: rgba(0, 255, 136, 0.07);
+          border: 1px solid rgba(0, 255, 136, 0.2);
+          border-radius: 100px;
+          font-size: 0.75rem;
+          font-weight: 700;
+          color: #00ff88;
+          letter-spacing: 1px;
+          text-transform: uppercase;
+        }
+        .hm-lb-live-dot {
+          width: 6px; height: 6px;
+          background: #00ff88;
+          border-radius: 50%;
+          box-shadow: 0 0 8px #00ff88;
+          animation: hm-lb-pulse 2s ease-in-out infinite;
+        }
+        @keyframes hm-lb-pulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.4; transform: scale(0.7); }
+        }
+
+        /* Top-3 Podium Grid */
+        .hm-lb-podium {
+          position: relative;
+          z-index: 2;
+          display: grid;
+          grid-template-columns: 1fr 1.15fr 1fr;
+          gap: 1rem;
+          margin-bottom: 1.5rem;
+          align-items: end;
+        }
+        .hm-lb-pod-card {
+          border-radius: 20px;
+          padding: 1.8rem 1.2rem 1.5rem;
+          text-align: center;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          transition: all 0.3s ease;
+          position: relative;
+          overflow: hidden;
+        }
+        .hm-lb-pod-card::before {
+          content: '';
+          position: absolute;
+          top: 0; left: 0; right: 0;
+          height: 1px;
+          background: linear-gradient(90deg, transparent, currentColor, transparent);
+          opacity: 0.5;
+        }
+        .hm-lb-pod-card:hover { transform: translateY(-6px); }
+
+        /* Gold */
+        .hm-lb-pod-gold {
+          background: linear-gradient(160deg, rgba(255,215,0,0.08) 0%, rgba(0,0,0,0.5) 100%);
+          border: 1px solid rgba(255,215,0,0.35);
+          box-shadow: 0 10px 40px rgba(255,215,0,0.12);
+          color: gold;
+        }
+        /* Silver */
+        .hm-lb-pod-silver {
+          background: linear-gradient(160deg, rgba(192,192,192,0.07) 0%, rgba(0,0,0,0.5) 100%);
+          border: 1px solid rgba(192,192,192,0.3);
+          box-shadow: 0 10px 30px rgba(192,192,192,0.08);
+          color: silver;
+        }
+        /* Bronze */
+        .hm-lb-pod-bronze {
+          background: linear-gradient(160deg, rgba(205,127,50,0.07) 0%, rgba(0,0,0,0.5) 100%);
+          border: 1px solid rgba(205,127,50,0.3);
+          box-shadow: 0 10px 30px rgba(205,127,50,0.08);
+          color: #cd7f32;
+        }
+
+        .hm-lb-pod-avatar-wrap {
+          position: relative;
+          margin-bottom: 0.8rem;
+        }
+        .hm-lb-pod-avatar {
+          border-radius: 50%;
+          border: 2px solid currentColor;
+          box-shadow: 0 0 14px currentColor;
+        }
+        .hm-lb-pod-badge {
+          position: absolute;
+          bottom: -6px; right: -6px;
+          font-size: 1.3rem;
+          filter: drop-shadow(0 0 6px rgba(255,255,255,0.4));
+        }
+        .hm-lb-pod-rank {
+          font-size: 0.65rem;
+          letter-spacing: 2px;
+          text-transform: uppercase;
+          opacity: 0.7;
+          margin-bottom: 0.3rem;
+        }
+        .hm-lb-pod-addr {
+          font-family: monospace;
+          font-size: 0.85rem;
+          color: #fff;
+          margin-bottom: 0.5rem;
+          opacity: 0.9;
+        }
+        .hm-lb-pod-pts {
+          font-family: var(--font-heading);
+          font-size: 1.3rem;
+          font-weight: 900;
+          color: #ffb800;
+          text-shadow: 0 0 12px rgba(255,184,0,0.4);
+        }
+
+        /* Rows for ranks 4-5 */
+        .hm-lb-rows {
+          position: relative;
+          z-index: 2;
+          display: flex;
+          flex-direction: column;
+          gap: 0.6rem;
+          margin-bottom: 2rem;
+        }
+        .hm-lb-row {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+          padding: 0.9rem 1.2rem;
+          background: rgba(255,255,255,0.025);
+          border: 1px solid rgba(255,255,255,0.05);
+          border-radius: 12px;
+          transition: all 0.25s ease;
+        }
+        .hm-lb-row:hover {
+          background: rgba(0,240,255,0.04);
+          border-color: rgba(0,240,255,0.18);
+          transform: translateX(4px);
+        }
+        .hm-lb-row-rank {
+          width: 32px;
+          font-family: var(--font-heading);
+          font-size: 1.1rem;
+          font-weight: 800;
+          color: rgba(255,255,255,0.4);
+          text-align: center;
+          flex-shrink: 0;
+        }
+        .hm-lb-row-avatar {
+          width: 36px; height: 36px;
+          border-radius: 50%;
+          flex-shrink: 0;
+          border: 1px solid rgba(255,255,255,0.1);
+        }
+        .hm-lb-row-info { flex: 1; }
+        .hm-lb-row-addr {
+          font-family: monospace;
+          font-size: 0.9rem;
+          color: #fff;
+        }
+        .hm-lb-row-pts {
+          font-family: var(--font-heading);
+          font-size: 1.05rem;
+          font-weight: 800;
+          color: #ffb800;
+        }
+
+        /* CTA button */
+        .hm-lb-cta {
+          position: relative;
+          z-index: 2;
+          display: flex;
+          justify-content: center;
+        }
+        .hm-lb-cta-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.6rem;
+          padding: 0.85rem 2.2rem;
+          background: linear-gradient(90deg, rgba(0,240,255,0.1), rgba(0,128,255,0.1));
+          border: 1px solid rgba(0,240,255,0.3);
+          border-radius: 100px;
+          color: #00f0ff;
+          font-family: var(--font-heading);
+          font-size: 0.9rem;
+          font-weight: 800;
+          letter-spacing: 1px;
+          text-transform: uppercase;
+          transition: all 0.3s ease;
+          cursor: pointer;
+          backdrop-filter: blur(4px);
+        }
+        .hm-lb-cta-btn:hover {
+          background: linear-gradient(90deg, rgba(0,240,255,0.18), rgba(0,128,255,0.18));
+          border-color: rgba(0,240,255,0.6);
+          box-shadow: 0 0 25px rgba(0,240,255,0.25);
+          color: #fff;
+        }
+        .hm-lb-cta-arrow {
+          transition: transform 0.25s ease;
+        }
+        .hm-lb-cta-btn:hover .hm-lb-cta-arrow {
+          transform: translateX(5px);
+        }
+
+        @media (max-width: 700px) {
+          .hm-lb-section { padding: 2rem 1.2rem; }
+          .hm-lb-podium { grid-template-columns: 1fr; gap: 1rem; }
+          .hm-lb-toprow { flex-direction: column; align-items: flex-start; gap: 1rem; }
+        }
+      `}</style>
+
+      <div
+        className="home-section-container hm-lb-section"
+        onClick={() => navigate('/leaderboard')}
+        role="button"
+        aria-label="View Full Leaderboard"
+        tabIndex={0}
+        onKeyDown={(e) => e.key === 'Enter' && navigate('/leaderboard')}
+      >
+        {/* Animated background */}
+        <div className="hm-lb-bg">
+          <div className="hm-lb-blob hm-lb-blob-1"></div>
+          <div className="hm-lb-blob hm-lb-blob-2"></div>
+          <div className="hm-lb-blob hm-lb-blob-3"></div>
+        </div>
+        {/* Particles */}
+        <div className="hm-lb-particles">
+          {[...Array(12)].map((_, i) => (
+            <div key={i} className="hm-lb-particle" style={{
+              left: `${(i * 8.3) + Math.random() * 5}%`,
+              width: `${1 + (i % 3)}px`,
+              height: `${1 + (i % 3)}px`,
+              animationDuration: `${4 + (i % 5) * 1.2}s`,
+              animationDelay: `${i * 0.4}s`,
+              bottom: 0,
+            }}></div>
+          ))}
+        </div>
+
+        {/* Top row */}
+        <div className="hm-lb-toprow">
+          <div className="hm-lb-headline">
+            <span className="hm-lb-eyebrow">🏆 Hall of Fame</span>
+            <h2 className="hm-lb-heading">LEADERBOARD</h2>
+          </div>
+          <div className="hm-lb-live-badge">
+            <span className="hm-lb-live-dot"></span>
+            Updated Live
           </div>
         </div>
 
-        <div
-          className="glass-panel home-leaderboard-panel hm-lb-clickable"
-          onClick={() => navigate('/leaderboard')}
-          role="button"
-          aria-label="View Full Leaderboard"
-          tabIndex={0}
-          onKeyDown={(e) => e.key === 'Enter' && navigate('/leaderboard')}
-        >
-          <div className="home-leaderboard-list">
-            {/* Mock Leaderboard Items based on reference */}
-            {[
-              { rank: 1, address: '0xA78...12F3', pts: '12,450', isCrown: true },
-              { rank: 2, address: '0x9C3...8D1E', pts: '9,870' },
-              { rank: 3, address: '0xFAD...3A8B', pts: '7,850', isCrown: true },
-              { rank: 4, address: '0x88E...1C7D', pts: '6,420' },
-              { rank: 5, address: '0xD2F...489A', pts: '5,210' }
-            ].map((player, idx) => (
-              <div key={idx} className="home-leaderboard-item">
-                <div className={`leaderboard-item-rank ${player.rank <= 3 ? 'top-rank' : ''}`}>{player.rank}</div>
-                <div className={`leaderboard-item-avatar ${player.rank <= 3 ? 'top-avatar' : ''}`}></div>
-                <div className="leaderboard-item-info">
-                  <div className="leaderboard-item-address">
-                    {player.isCrown && <span style={{ color: '#ffb800' }}>👑</span>} {player.address}
-                  </div>
-                  <div className="leaderboard-item-pts">{player.pts} PTS</div>
-                </div>
+        {/* Top-3 Podium */}
+        <div className="hm-lb-podium">
+          {/* Rank 2 — Silver */}
+          <div className="hm-lb-pod-card hm-lb-pod-silver">
+            <div className="hm-lb-pod-avatar-wrap">
+              <div className="hm-lb-pod-avatar" style={{ width: 54, height: 54, background: 'hsl(200,70%,45%)' }}>
+                <div className="hm-lb-pod-badge">🥈</div>
               </div>
-            ))}
+            </div>
+            <div className="hm-lb-pod-rank">Rank #2</div>
+            <div className="hm-lb-pod-addr">0x9C3...8D1E</div>
+            <div className="hm-lb-pod-pts">9,870 ⭐</div>
           </div>
 
-          <div className="hm-lb-view-all">
-            View Full Leaderboard <span className="hm-lb-arrow">→</span>
+          {/* Rank 1 — Gold (center/tallest) */}
+          <div className="hm-lb-pod-card hm-lb-pod-gold">
+            <div className="hm-lb-pod-avatar-wrap">
+              <div className="hm-lb-pod-avatar" style={{ width: 72, height: 72, background: 'hsl(40,90%,50%)' }}>
+                <div className="hm-lb-pod-badge" style={{ fontSize: '1.6rem', bottom: -8, right: -8 }}>🥇</div>
+              </div>
+            </div>
+            <div className="hm-lb-pod-rank">Rank #1</div>
+            <div className="hm-lb-pod-addr">0xA78...12F3</div>
+            <div className="hm-lb-pod-pts" style={{ fontSize: '1.6rem' }}>12,450 ⭐</div>
+          </div>
+
+          {/* Rank 3 — Bronze */}
+          <div className="hm-lb-pod-card hm-lb-pod-bronze">
+            <div className="hm-lb-pod-avatar-wrap">
+              <div className="hm-lb-pod-avatar" style={{ width: 54, height: 54, background: 'hsl(280,65%,45%)' }}>
+                <div className="hm-lb-pod-badge">🥉</div>
+              </div>
+            </div>
+            <div className="hm-lb-pod-rank">Rank #3</div>
+            <div className="hm-lb-pod-addr">0xFAD...3A8B</div>
+            <div className="hm-lb-pod-pts">7,850 ⭐</div>
+          </div>
+        </div>
+
+        {/* Ranks 4 & 5 */}
+        <div className="hm-lb-rows">
+          {[
+            { rank: 4, address: '0x88E...1C7D', pts: '6,420', hue: 150 },
+            { rank: 5, address: '0xD2F...489A', pts: '5,210', hue: 20  },
+          ].map((p) => (
+            <div key={p.rank} className="hm-lb-row">
+              <div className="hm-lb-row-rank">#{p.rank}</div>
+              <div className="hm-lb-row-avatar" style={{ background: `hsl(${p.hue},65%,45%)` }}></div>
+              <div className="hm-lb-row-info">
+                <div className="hm-lb-row-addr">{p.address}</div>
+              </div>
+              <div className="hm-lb-row-pts">{p.pts} ⭐</div>
+            </div>
+          ))}
+        </div>
+
+        {/* CTA */}
+        <div className="hm-lb-cta">
+          <div className="hm-lb-cta-btn">
+            View Full Leaderboard <span className="hm-lb-cta-arrow">→</span>
           </div>
         </div>
       </div>
