@@ -307,6 +307,52 @@ const Home = () => {
 
       {/* Leaderboard Section */}
       <div className="home-section-container" style={{ marginBottom: '4rem' }}>
+        <style>{`
+          .hm-lb-clickable {
+            cursor: pointer;
+            transition:
+              transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+              box-shadow 0.3s ease,
+              border-color 0.3s ease;
+            position: relative;
+            text-decoration: none;
+            display: block;
+          }
+          .hm-lb-clickable:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 16px 48px rgba(0, 240, 255, 0.18), 0 0 0 1px rgba(0, 240, 255, 0.35);
+            border-color: rgba(0, 240, 255, 0.35) !important;
+          }
+          .hm-lb-clickable:active {
+            transform: translateY(-2px);
+          }
+          .hm-lb-view-all {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 0.4rem;
+            margin-top: 1.25rem;
+            font-size: 0.85rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: #00f0ff;
+            opacity: 0.8;
+            transition: opacity 0.2s ease, gap 0.2s ease;
+          }
+          .hm-lb-clickable:hover .hm-lb-view-all {
+            opacity: 1;
+            gap: 0.7rem;
+          }
+          .hm-lb-arrow {
+            font-size: 1rem;
+            transition: transform 0.25s ease;
+          }
+          .hm-lb-clickable:hover .hm-lb-arrow {
+            transform: translateX(4px);
+          }
+        `}</style>
+
         <h2 className="home-section-title uppercase">Leaderboard</h2>
         <div className="home-leaderboard-header">
           <p className="home-leaderboard-subtitle">Top players on PlayFi</p>
@@ -315,9 +361,14 @@ const Home = () => {
           </div>
         </div>
 
-        <div className="glass-panel home-leaderboard-panel">
-
-          
+        <div
+          className="glass-panel home-leaderboard-panel hm-lb-clickable"
+          onClick={() => navigate('/leaderboard')}
+          role="button"
+          aria-label="View Full Leaderboard"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === 'Enter' && navigate('/leaderboard')}
+        >
           <div className="home-leaderboard-list">
             {/* Mock Leaderboard Items based on reference */}
             {[
@@ -338,6 +389,10 @@ const Home = () => {
                 </div>
               </div>
             ))}
+          </div>
+
+          <div className="hm-lb-view-all">
+            View Full Leaderboard <span className="hm-lb-arrow">→</span>
           </div>
         </div>
       </div>
