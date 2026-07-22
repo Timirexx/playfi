@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useWallet } from '../context/WalletContext';
 
 const GameCard = ({ icon, title, description, onClick }) => (
   <div className="home-game-card glass-panel home-game-card-layout">
@@ -20,6 +21,53 @@ const GameCard = ({ icon, title, description, onClick }) => (
 
 const Home = () => {
   const navigate = useNavigate();
+  const { address: userAddress, updateStarPoints } = useWallet();
+
+  const [lastClaim, setLastClaim] = useState(0);
+  const [timeRemaining, setTimeRemaining] = useState(0);
+  const [successAnim, setSuccessAnim] = useState(false);
+
+  useEffect(() => {
+    if (!userAddress) return;
+    const saved = localStorage.getItem(`playfi_daily_reward_${userAddress}`);
+    setLastClaim(saved ? parseInt(saved) : 0);
+  }, [userAddress]);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      if (!lastClaim) {
+        setTimeRemaining(0);
+        return;
+      }
+      const now = Date.now();
+      const elapsed = now - lastClaim;
+      const remaining = Math.max(0, 86400000 - elapsed);
+      setTimeRemaining(remaining);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [lastClaim]);
+
+  const formatCountdown = (ms) => {
+    const totalSecs = Math.floor(ms / 1000);
+    const h = Math.floor(totalSecs / 3600);
+    const m = Math.floor((totalSecs % 3600) / 60);
+    const s = totalSecs % 60;
+    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
+
+  const handleClaim = () => {
+    if (!userAddress) {
+      window.dispatchEvent(new CustomEvent('showToast', { detail: { message: "Connect wallet to claim rewards", type: 'error' } }));
+      return;
+    }
+    updateStarPoints(50);
+    const now = Date.now();
+    localStorage.setItem(`playfi_daily_reward_${userAddress}`, now.toString());
+    setLastClaim(now);
+    setSuccessAnim(true);
+    setTimeout(() => setSuccessAnim(false), 2000);
+    window.dispatchEvent(new CustomEvent('showToast', { detail: { message: "Claimed 50 Daily Stars! ⭐", type: 'success' } }));
+  };
 
   return (
     <div className="view home-view section-active">
@@ -43,6 +91,153 @@ const Home = () => {
              <div className="hero-graphics-controller">🎮</div>
              <div className="hero-graphics-coin">🪙</div>
            </div>
+        </div>
+      </div>
+
+      {/* Daily Star Reward Section */}
+      <style>{`
+        .hm-daily-card {
+            background: rgba(0, 240, 255, 0.03);
+            border: 1px solid rgba(0, 240, 255, 0.15);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 4rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .hm-daily-card:hover {
+            border-color: rgba(0, 240, 255, 0.4);
+            box-shadow: 0 15px 40px rgba(0, 240, 255, 0.1);
+        }
+        .hm-daily-left {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            position: relative;
+            z-index: 2;
+        }
+        .hm-daily-icon {
+            font-size: 3.5rem;
+            filter: drop-shadow(0 0 15px rgba(0, 240, 255, 0.5));
+            animation: hm-float 3s ease-in-out infinite;
+        }
+        @keyframes hm-float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        .hm-daily-title {
+            color: #00f0ff;
+            font-family: var(--font-heading);
+            font-size: 1.8rem;
+            font-weight: 800;
+            margin: 0 0 0.3rem 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .hm-daily-desc {
+            color: var(--text-muted);
+            margin: 0;
+            font-size: 0.95rem;
+        }
+        .hm-daily-right {
+            position: relative;
+            z-index: 2;
+            min-width: 200px;
+            text-align: right;
+        }
+        .hm-claim-btn {
+            background: linear-gradient(90deg, #00f0ff, #0080ff);
+            border: none;
+            color: #000;
+            font-family: var(--font-heading);
+            font-weight: 800;
+            font-size: 1.1rem;
+            padding: 1rem 2rem;
+            border-radius: 100px;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.4);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .hm-claim-btn::after {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 50%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transform: skewX(-20deg);
+            animation: hm-shimmer 3s infinite;
+        }
+        @keyframes hm-shimmer {
+            100% { left: 200%; }
+        }
+        .hm-claim-btn:hover {
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 0 30px rgba(0, 240, 255, 0.7);
+            color: #fff;
+        }
+        .hm-countdown-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+        .hm-countdown-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.3rem;
+        }
+        .hm-countdown-time {
+            font-family: var(--font-heading);
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: #fff;
+            text-shadow: 0 0 10px rgba(255,255,255,0.3);
+            letter-spacing: 2px;
+        }
+        .hm-success-anim {
+            animation: hm-pulse-success 0.5s ease-out;
+        }
+        @keyframes hm-pulse-success {
+            0% { transform: scale(1); box-shadow: 0 0 0 rgba(0, 240, 255, 0); }
+            50% { transform: scale(1.02); box-shadow: 0 0 50px rgba(0, 240, 255, 0.8); }
+            100% { transform: scale(1); box-shadow: 0 0 20px rgba(0, 240, 255, 0.2); }
+        }
+        
+        @media (max-width: 768px) {
+            .hm-daily-card { flex-direction: column; text-align: center; gap: 1.5rem; padding: 1.5rem; }
+            .hm-daily-left { flex-direction: column; gap: 1rem; }
+            .hm-countdown-wrap { align-items: center; }
+        }
+      `}</style>
+      <div className={`hm-daily-card ${successAnim ? 'hm-success-anim' : ''}`}>
+        <div className="hm-daily-left">
+            <div className="hm-daily-icon">🎁</div>
+            <div>
+                <h3 className="hm-daily-title">Daily Star Reward</h3>
+                <p className="hm-daily-desc">Claim your free 50 Star Points every 24 hours.</p>
+            </div>
+        </div>
+        <div className="hm-daily-right">
+            {timeRemaining > 0 ? (
+                <div className="hm-countdown-wrap">
+                    <div className="hm-countdown-label">Next Reward In</div>
+                    <div className="hm-countdown-time">{formatCountdown(timeRemaining)}</div>
+                </div>
+            ) : (
+                <button className="hm-claim-btn" onClick={handleClaim}>
+                    Claim 50 Stars
+                </button>
+            )}
         </div>
       </div>
 
