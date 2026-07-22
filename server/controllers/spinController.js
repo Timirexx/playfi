@@ -8,6 +8,7 @@ import {
 import { ethers } from "ethers";
 import axios from "axios";
 import dotenv from "dotenv";
+import { TREASURY_ADDRESS, TREASURY_SETTLE_ABI } from "../config/treasury.js";
 
 dotenv.config();
 
@@ -77,7 +78,7 @@ export const handleSpin = async (req, res) => {
             return res.status(400).json({ success: false, error: "Transaction failed or not found after retries." });
         }
 
-        const expectedAddress = "0x83F2DAEE3765ffEFdD02812E96d23Bb293ae0EAF".toLowerCase();
+        const expectedAddress = TREASURY_ADDRESS.toLowerCase();
         if (!txResponse.to || txResponse.to.toLowerCase() !== expectedAddress) {
             return res.status(400).json({ success: false, error: "Incorrect payment recipient." });
         }
@@ -104,15 +105,10 @@ export const handleSpin = async (req, res) => {
         // 5. CONTRACT SETTLEMENT
         let payoutTransactionId = null;
         try {
-            const gamesAddress = "0x83F2DAEE3765ffEFdD02812E96d23Bb293ae0EAF";
             const provider = new ethers.JsonRpcProvider("https://testnet.hashio.io/api");
             const wallet = new ethers.Wallet(process.env.TREASURY_PRIVATE_KEY, provider);
-            
-            const abi = [
-                "function settleGame(address user, uint256 winAmount) public"
-            ];
-            const contract = new ethers.Contract(gamesAddress, abi, wallet);
-            
+            const contract = new ethers.Contract(TREASURY_ADDRESS, TREASURY_SETTLE_ABI, wallet);
+
             const multiplierValue = parseInt(landedMultiplier.replace("x", ""));
             // Multiply betAmount (from frontend) by multiplier
             const winTiny = isWin ? ethers.parseUnits((parseFloat(betAmount) * multiplierValue).toFixed(8), 8) : 0n;

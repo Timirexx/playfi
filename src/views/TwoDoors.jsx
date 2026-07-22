@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useWallet } from '../context/WalletContext';
 import { ethers } from 'ethers';
 import { useAppKitProvider } from '@reown/appkit/react';
-import { GAME_TREASURY_ADDRESS, GAME_TREASURY_ABI } from '../contracts/GameTreasury';
+import { PLAYFI_VAULT_ADDRESS, PLAYFI_VAULT_ABI } from '../contracts/PlayFiVault';
 
 const TwoDoors = () => {
     const navigate = useNavigate();
@@ -36,7 +36,7 @@ const TwoDoors = () => {
             // 1. On-Chain Buy-In
             const provider = new ethers.BrowserProvider(walletProvider);
             const signer = await provider.getSigner();
-            const vaultContract = new ethers.Contract(GAME_TREASURY_ADDRESS, GAME_TREASURY_ABI, signer);
+            const vaultContract = new ethers.Contract(PLAYFI_VAULT_ADDRESS, PLAYFI_VAULT_ABI, signer);
 
             const valWei = ethers.parseUnits(betAmount, 18);
             const tx = await vaultContract.placeBet({ value: valWei });

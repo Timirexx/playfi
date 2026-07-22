@@ -1,6 +1,7 @@
 import { ethers } from "ethers";
 import crypto from "crypto";
 import dotenv from "dotenv";
+import { TREASURY_ADDRESS, TREASURY_SETTLE_ABI } from "../config/treasury.js";
 
 dotenv.config();
 
@@ -61,7 +62,7 @@ export const startMines = async (req, res) => {
             return res.status(400).json({ success: false, error: "Transaction failed or not found after retries." });
         }
 
-        const expectedAddress = "0x83F2DAEE3765ffEFdD02812E96d23Bb293ae0EAF".toLowerCase();
+        const expectedAddress = TREASURY_ADDRESS.toLowerCase();
         if (!txResponse.to || txResponse.to.toLowerCase() !== expectedAddress) {
             return res.status(400).json({ success: false, error: "Incorrect payment recipient." });
         }
@@ -153,11 +154,9 @@ export const cashoutMines = async (req, res) => {
 
 async function settleVault(userAddress, winAmount, betAmount) {
     try {
-        const vaultAddress = "0x83F2DAEE3765ffEFdD02812E96d23Bb293ae0EAF";
         const provider = new ethers.JsonRpcProvider("https://testnet.hashio.io/api");
         const wallet = new ethers.Wallet(process.env.TREASURY_PRIVATE_KEY, provider);
-        const abi = ["function settleGame(address user, uint256 winAmount) public"];
-        const contract = new ethers.Contract(vaultAddress, abi, wallet);
+        const contract = new ethers.Contract(TREASURY_ADDRESS, TREASURY_SETTLE_ABI, wallet);
 
         const winTiny = ethers.parseUnits(winAmount.toFixed(8), 8);
 
