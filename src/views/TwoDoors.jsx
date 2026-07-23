@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useWallet } from '../context/WalletContext';
 import { ethers } from 'ethers';
 import { useAppKitProvider } from '@reown/appkit/react';
-import { PLAYFI_VAULT_ADDRESS, PLAYFI_VAULT_ABI } from '../contracts/PlayFiVault';
+import { TWO_DOORS_ADDRESS, TWO_DOORS_ABI } from '../contracts/TwoDoors';
 
 const TwoDoors = () => {
     const navigate = useNavigate();
@@ -33,23 +33,23 @@ const TwoDoors = () => {
         }));
 
         try {
-            // 1. On-Chain Buy-In
+            // 1. On-chain stake into the Two Doors treasury (placeBet).
             const provider = new ethers.BrowserProvider(walletProvider);
             const signer = await provider.getSigner();
-            const vaultContract = new ethers.Contract(PLAYFI_VAULT_ADDRESS, PLAYFI_VAULT_ABI, signer);
+            const gameContract = new ethers.Contract(TWO_DOORS_ADDRESS, TWO_DOORS_ABI, signer);
 
             const valWei = ethers.parseUnits(betAmount, 18);
-            const tx = await vaultContract.placeBet({ value: valWei });
-            
-            window.dispatchEvent(new CustomEvent('showTxOverlay', { 
-                detail: { title: 'Verifying Wager', desc: 'Waiting for network confirmation...' } 
+            const tx = await gameContract.placeBet({ value: valWei });
+
+            window.dispatchEvent(new CustomEvent('showTxOverlay', {
+                detail: { title: 'Verifying Wager', desc: 'Waiting for network confirmation...' }
             }));
-            
+
             const receipt = await tx.wait();
-            
+
             window.dispatchEvent(new CustomEvent('hideTxOverlay'));
-            window.dispatchEvent(new CustomEvent('showToast', { 
-                detail: { message: `Stake Confirmed! Choose a door.`, type: 'success' } 
+            window.dispatchEvent(new CustomEvent('showToast', {
+                detail: { message: `Stake Confirmed! Choose a door.`, type: 'success' }
             }));
 
             setWagerTxId(receipt.hash);
@@ -66,64 +66,87 @@ const TwoDoors = () => {
         }
     };
 
+    const resetGame = () => {
+        setIsRunning(false);
+        setGameState(null);
+        setSelectedDoor(null);
+        setTreasureDoor(null);
+        setIsStaked(false);
+        setWagerTxId(null);
+    };
+
     const handlePlay = async (doorNumber) => {
-        if (!isStaked || !wagerTxId || isRunning) return;
+        if (!isStaked || !wagerTxId || isRunning || !walletProvider) return;
         setIsRunning(true);
         setSelectedDoor(doorNumber);
-        setGameState('opening');
 
         try {
-            // 2. Call Backend API
+            // 2a. Commit the chosen door on-chain (chooseDoor). This is a wallet tx —
+            // the door choice is recorded on the contract, no outcome decided yet.
+            window.dispatchEvent(new CustomEvent('showTxOverlay', {
+                detail: { title: `Door ${doorNumber}`, desc: 'Confirm your choice in your wallet...' }
+            }));
+
+            const provider = new ethers.BrowserProvider(walletProvider);
+            const signer = await provider.getSigner();
+            const gameContract = new ethers.Contract(TWO_DOORS_ADDRESS, TWO_DOORS_ABI, signer);
+
+            const chooseTx = await gameContract.chooseDoor(doorNumber);
+            await chooseTx.wait();
+
+            // 2b. Ask the backend keeper to trigger the on-chain PRNG reveal + payout.
+            window.dispatchEvent(new CustomEvent('showTxOverlay', {
+                detail: { title: 'Revealing...', desc: 'Rolling the on-chain randomness...' }
+            }));
+            setGameState('opening');
+
             const API_BASE = window.location.hostname === 'localhost' ? "http://localhost:3001" : "https://server-chi-rose-76.vercel.app";
             const response = await fetch(`${API_BASE}/api/twodoors`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    transactionId: wagerTxId,
-                    userAddress: address,
-                    betAmount: betAmount,
-                    selectedDoor: doorNumber
-                })
+                body: JSON.stringify({ userAddress: address })
             });
 
             const data = await response.json();
-            
+
             if (!data.success) {
-                throw new Error(data.error || "Failed to verify transaction");
+                throw new Error(data.error || "Failed to resolve game");
             }
 
+            window.dispatchEvent(new CustomEvent('hideTxOverlay'));
             setTreasureDoor(data.treasureDoor);
 
-            // Wait 1.5s for opening animation, then show result
+            // Hold on the opening animation briefly, then reveal the result.
             setTimeout(() => {
                 setGameState(data.isWin ? 'win' : 'lose');
                 setIsRunning(false);
                 setIsStaked(false);
                 setWagerTxId(null);
                 refreshBalance();
-                
+
                 if (data.isWin) {
                     const wonAmount = parseFloat(betAmount) * 2;
-                    window.dispatchEvent(new CustomEvent('showToast', { 
-                        detail: { message: `You Won! You received ${wonAmount} HBAR.`, type: 'success' } 
+                    window.dispatchEvent(new CustomEvent('showToast', {
+                        detail: { message: `You Won! You received ${wonAmount} HBAR.`, type: 'success' }
                     }));
                 } else {
-                    window.dispatchEvent(new CustomEvent('showToast', { 
-                        detail: { message: `You Lost! Better luck next time.`, type: 'error' } 
+                    window.dispatchEvent(new CustomEvent('showToast', {
+                        detail: { message: `You Lost! Better luck next time.`, type: 'error' }
                     }));
                 }
             }, 1500);
 
         } catch (err) {
-            console.error("Two Doors API Error:", err);
-            window.dispatchEvent(new CustomEvent('showToast', { 
-                detail: { message: err.reason || err.message || 'Verification failed', type: 'error' } 
+            console.error("Two Doors Error:", err);
+            window.dispatchEvent(new CustomEvent('hideTxOverlay'));
+            window.dispatchEvent(new CustomEvent('showToast', {
+                detail: { message: err.reason || err.message || 'Something went wrong', type: 'error' }
             }));
+            // The stake is still live on-chain (game not resolved). Let the player
+            // re-pick a door rather than wiping their staked game.
             setIsRunning(false);
             setGameState(null);
             setSelectedDoor(null);
-            setIsStaked(false);
-            setWagerTxId(null);
         }
     };
 
@@ -644,11 +667,7 @@ const TwoDoors = () => {
                         <button 
                             className="td-stake-btn" 
                             style={{ maxWidth: '200px', marginBottom: '2rem' }}
-                            onClick={() => {
-                                setGameState(null);
-                                setSelectedDoor(null);
-                                setTreasureDoor(null);
-                            }}
+                            onClick={resetGame}
                         >
                             PLAY AGAIN
                         </button>

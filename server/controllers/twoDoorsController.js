@@ -1,96 +1,102 @@
 import { ethers } from "ethers";
 import dotenv from "dotenv";
-import { TREASURY_ADDRESS, TREASURY_SETTLE_ABI } from "../config/treasury.js";
+import { TWO_DOORS_ADDRESS, TWO_DOORS_ABI, TWO_DOORS_STATUS } from "../config/twoDoors.js";
 
 dotenv.config();
 
-// Idempotency Cache (In-memory)
-const processedTransactions = new Set();
+const HASHIO_RPC = "https://testnet.hashio.io/api";
 
+/**
+ * Two Doors resolution (keeper role).
+ *
+ * With the on-chain PRNG design, the backend no longer decides the outcome — it
+ * only *triggers* the reveal. The player has already:
+ *   1. placeBet()      — staked HBAR into the Two Doors contract
+ *   2. chooseDoor(1|2) — committed to a door on-chain
+ * This endpoint calls resolveGame(player), which asks Hedera's PRNG for the
+ * treasure door on-chain, pays 2x on a win, and emits GameWon / GameLost. We read
+ * the result straight from that event and return it to the frontend to reveal.
+ */
 export const handleTwoDoors = async (req, res) => {
-    const { transactionId, userAddress, betAmount, selectedDoor } = req.body;
+    const { userAddress } = req.body;
 
-    console.log(`[TWO DOORS] Request from ${userAddress} | Tx: ${transactionId} | Door: ${selectedDoor}`);
+    console.log(`[TWO DOORS] Resolve request for ${userAddress}`);
+
+    if (!userAddress || !ethers.isAddress(userAddress)) {
+        return res.status(400).json({ success: false, error: "Missing or invalid userAddress" });
+    }
+    if (TWO_DOORS_ADDRESS === "0x0000000000000000000000000000000000000000") {
+        return res.status(500).json({ success: false, error: "Two Doors contract not deployed yet." });
+    }
+    if (!process.env.TREASURY_PRIVATE_KEY) {
+        return res.status(500).json({ success: false, error: "Server signer not configured." });
+    }
 
     try {
-        // 1. IDEMPOTENCY CHECK
-        if (processedTransactions.has(transactionId)) {
-            return res.status(400).json({ success: false, error: "Transaction already processed." });
+        const provider = new ethers.JsonRpcProvider(HASHIO_RPC);
+        const wallet = new ethers.Wallet(process.env.TREASURY_PRIVATE_KEY, provider);
+        const contract = new ethers.Contract(TWO_DOORS_ADDRESS, TWO_DOORS_ABI, wallet);
+
+        // Confirm the player actually has a door-chosen game awaiting resolution.
+        // (resolveGame would revert otherwise, but checking first gives a cleaner error.)
+        const game = await contract.getGame(userAddress);
+        if (Number(game.status) !== TWO_DOORS_STATUS.DOOR_CHOSEN) {
+            return res.status(400).json({
+                success: false,
+                error: "No door-chosen game to resolve. Stake and pick a door first.",
+            });
         }
 
-        // 2. TRANSACTION VERIFICATION (EVM Hash via ethers)
-        const provider = new ethers.JsonRpcProvider("https://testnet.hashio.io/api");
-        
-        let txReceipt = null;
-        let txResponse = null;
-        let attempts = 0;
-        
-        // Retry loop to handle RPC indexing delay
-        while (attempts < 10) {
-            txReceipt = await provider.getTransactionReceipt(transactionId);
-            txResponse = await provider.getTransaction(transactionId);
-            
-            if (txReceipt && txReceipt.status === 1 && txResponse) {
-                break; // Found and successful
+        // Trigger the on-chain PRNG reveal + payout.
+        const tx = await contract.resolveGame(userAddress, { gasLimit: 600000 });
+        const receipt = await tx.wait();
+
+        // Read the outcome from the emitted event.
+        let isWin = null;
+        let treasureDoor = null;
+        let selectedDoor = Number(game.chosenDoor);
+        let payout = "0";
+
+        for (const log of receipt.logs) {
+            let parsed;
+            try {
+                parsed = contract.interface.parseLog(log);
+            } catch {
+                continue; // not one of our events
             }
-            
-            attempts++;
-            await new Promise(resolve => setTimeout(resolve, 1500)); // Wait 1.5s before retry
+            if (parsed.name === "GameWon") {
+                isWin = true;
+                selectedDoor = Number(parsed.args.chosenDoor);
+                treasureDoor = Number(parsed.args.treasureDoor);
+                payout = parsed.args.payout.toString();
+            } else if (parsed.name === "GameLost") {
+                isWin = false;
+                selectedDoor = Number(parsed.args.chosenDoor);
+                treasureDoor = Number(parsed.args.treasureDoor);
+            }
         }
 
-        if (!txReceipt || txReceipt.status !== 1 || !txResponse) {
-            return res.status(400).json({ success: false, error: "Transaction failed or not found after retries." });
+        if (isWin === null) {
+            // Should not happen if the tx succeeded, but fall back to reading state.
+            const resolved = await contract.getGame(userAddress);
+            isWin = resolved.won;
+            treasureDoor = Number(resolved.treasureDoor);
         }
 
-        const expectedAddress = TREASURY_ADDRESS.toLowerCase();
-        if (!txResponse.to || txResponse.to.toLowerCase() !== expectedAddress) {
-            return res.status(400).json({ success: false, error: "Incorrect payment recipient." });
-        }
-
-        const expectedWei = ethers.parseUnits(betAmount.toString(), 18);
-        if (txResponse.value < expectedWei) {
-            return res.status(400).json({ success: false, error: "Incorrect payment amount." });
-        }
-
-        // Mark as processed
-        processedTransactions.add(transactionId);
-
-        // 3. GENERATE RESULT (1 or 2)
-        const treasureDoor = Math.random() < 0.5 ? 1 : 2;
-        const isWin = (parseInt(selectedDoor) === treasureDoor);
-
-        // 4. CONTRACT SETTLEMENT
-        let payoutTransactionId = null;
-        try {
-            const provider = new ethers.JsonRpcProvider("https://testnet.hashio.io/api");
-            const wallet = new ethers.Wallet(process.env.TREASURY_PRIVATE_KEY, provider);
-            const contract = new ethers.Contract(TREASURY_ADDRESS, TREASURY_SETTLE_ABI, wallet);
-
-            // Multiply betAmount by 2 if win
-            const winTiny = isWin ? ethers.parseUnits((parseFloat(betAmount) * 2).toFixed(8), 8) : 0n;
-            
-            // Fire and forget: if winTiny > 0, it pays out. If 0, it just emits event.
-            contract.settleGame(userAddress, winTiny, { gasLimit: 500000 })
-                .then(tx => tx.wait().catch(err => console.error("Settlement Confirm Error:", err)))
-                .catch(err => console.error("Settlement Submit Error:", err));
-
-        } catch (contractErr) {
-            console.error("[TWO DOORS] Contract Settlement Error:", contractErr.message);
-        }
-
-        // 5. RESPONSE
         return res.json({
             success: true,
             isWin,
+            selectedDoor,
             treasureDoor,
-            payoutTransactionId
+            payout,                       // in weibars (18 decimals)
+            payoutHbar: ethers.formatEther(payout),
+            transactionHash: receipt.hash,
         });
-
     } catch (error) {
-        console.error("Two Doors Error:", error.response?.data || error.message);
-        return res.status(500).json({ 
-            success: false, 
-            error: "Backend processing error. Please check your transaction status." 
+        console.error("[TWO DOORS] Resolve error:", error);
+        return res.status(500).json({
+            success: false,
+            error: error.reason || error.shortMessage || "Failed to resolve game.",
         });
     }
 };
