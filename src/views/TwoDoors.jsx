@@ -5,6 +5,9 @@ import { ethers } from 'ethers';
 import { useAppKitProvider } from '@reown/appkit/react';
 import { TWO_DOORS_ADDRESS, TWO_DOORS_ABI } from '../contracts/TwoDoors';
 
+const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
+const isContractDeployed = TWO_DOORS_ADDRESS && TWO_DOORS_ADDRESS !== ZERO_ADDRESS;
+
 const TwoDoors = () => {
     const navigate = useNavigate();
     const { isConnected, address, refreshBalance } = useWallet();
@@ -23,6 +26,12 @@ const TwoDoors = () => {
 
     const handleStake = async () => {
         if (!isConnected || isRunning || !walletProvider) return;
+        if (!isContractDeployed) {
+            window.dispatchEvent(new CustomEvent('showToast', {
+                detail: { message: 'Two Doors isn\'t deployed yet. Deploy the contract first.', type: 'error' }
+            }));
+            return;
+        }
         setIsRunning(true);
         setGameState(null);
         setSelectedDoor(null);
@@ -106,6 +115,16 @@ const TwoDoors = () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ userAddress: address })
             });
+
+            // The API should always return JSON. If we got HTML (a 404 or a crashed
+            // serverless function), surface the real status instead of letting
+            // response.json() throw a cryptic "Unexpected token '<'" parse error.
+            const contentType = response.headers.get('content-type') || '';
+            if (!contentType.includes('application/json')) {
+                const bodyText = await response.text();
+                console.error('Two Doors: non-JSON response', response.status, bodyText.slice(0, 200));
+                throw new Error(`Backend unavailable (HTTP ${response.status}). The game server may be down or not deployed.`);
+            }
 
             const data = await response.json();
 
