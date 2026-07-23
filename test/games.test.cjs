@@ -30,12 +30,28 @@ function findImport(importPath) {
   return { error: "File not found: " + importPath };
 }
 
+// TwoDoors resolves via Hedera's PRNG system contract (0x169), which only
+// exists on the Hedera network — not on the local ganache EVM. This harness
+// subclasses the real contract and overrides only the randomness source with a
+// settable value, so every other line of TwoDoors is exercised as-deployed.
+const TWO_DOORS_HARNESS = `// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+import {TwoDoors} from "./TwoDoors.sol";
+contract TwoDoorsHarness is TwoDoors {
+    uint8 private _forcedDoor = 1;
+    constructor(address o, address b) TwoDoors(o, b) {}
+    function setForcedDoor(uint8 d) external { _forcedDoor = d; }
+    function _treasureDoor() internal view override returns (uint8) { return _forcedDoor; }
+}
+`;
+
 function compile() {
   const targets = ["GameBase.sol", "Mines.sol", "SpinToWin.sol", "TwoDoors.sol"];
   const sources = {};
   for (const t of targets) {
     sources[t] = { content: fs.readFileSync(path.join(GAMES_DIR, t), "utf8") };
   }
+  sources["TwoDoorsHarness.sol"] = { content: TWO_DOORS_HARNESS };
 
   const input = {
     language: "Solidity",
@@ -64,7 +80,10 @@ function ok(desc) { pass++; console.log(`  ✓ ${desc}`); }
 function bad(desc, err) { fail++; console.log(`  ✗ ${desc} -- ${err}`); }
 async function expectRevert(promise, desc) {
   try {
-    await promise;
+    const tx = await promise;
+    // A tx may pass gas estimation yet revert when mined; await the receipt so
+    // that case is still caught as a (correct) revert rather than a false pass.
+    if (tx && typeof tx.wait === "function") await tx.wait();
     bad(desc, "expected revert but succeeded");
   } catch (e) {
     ok(desc);
@@ -80,9 +99,11 @@ async function rawBalance(provider, addr) {
   return BigInt(hex);
 }
 
-async function main() {
-  const output = compile();
-
+// Each game is an independent contract, so we test each on its own fresh chain.
+// This also sidesteps an ethers BrowserProvider quirk where its internal caches
+// go stale after many deployments/txs against a raw EIP-1193 provider (the same
+// reason rawBalance() reads via the underlying provider directly).
+async function setupEnv(output) {
   const provider = ganache.provider({ wallet: { totalAccounts: 5 }, logging: { quiet: true } });
   const ethersProvider = new ethers.BrowserProvider(provider);
 
@@ -95,17 +116,29 @@ async function main() {
   const player2Signer = await ethersProvider.getSigner(player2Addr);
   const strangerSigner = await ethersProvider.getSigner(strangerAddr);
 
-  async function deploy(contractName) {
-    const data = output.contracts[`${contractName}.sol`][contractName];
+  async function deploy(contractName, fileName = `${contractName}.sol`) {
+    const data = output.contracts[fileName][contractName];
     const factory = new ethers.ContractFactory(data.abi, data.evm.bytecode.object, ownerSigner);
     const contract = await factory.deploy(ownerAddr, backendAddr);
     await contract.waitForDeployment();
     return new ethers.Contract(await contract.getAddress(), data.abi, ethersProvider);
   }
 
+  return {
+    provider, ethersProvider, deploy,
+    ownerAddr, backendAddr, playerAddr, player2Addr, strangerAddr,
+    ownerSigner, backendSigner, playerSigner, player2Signer, strangerSigner,
+  };
+}
+
+async function main() {
+  const output = compile();
+
   // ============ MINES ============
   console.log("\n=== Mines.sol ===");
   {
+    const { provider, deploy, ownerAddr, backendAddr, playerAddr, strangerAddr,
+      ownerSigner, backendSigner, playerSigner, strangerSigner } = await setupEnv(output);
     const mines = await deploy("Mines");
     const asPlayer = mines.connect(playerSigner);
     const asBackend = mines.connect(backendSigner);
@@ -175,6 +208,8 @@ async function main() {
   // ============ SPIN TO WIN ============
   console.log("\n=== SpinToWin.sol ===");
   {
+    const { provider, deploy, playerAddr,
+      ownerSigner, backendSigner, playerSigner } = await setupEnv(output);
     const spin = await deploy("SpinToWin");
     const asPlayer = spin.connect(playerSigner);
     const asBackend = spin.connect(backendSigner);
@@ -212,30 +247,96 @@ async function main() {
     }
   }
 
-  // ============ TWO DOORS ============
+  // ============ TWO DOORS (on-chain PRNG + keeper reveal) ============
+  // Deployed via the harness so the Hedera-PRNG treasure door can be forced
+  // deterministically; every other code path is the real TwoDoors contract.
   console.log("\n=== TwoDoors.sol ===");
   {
-    const doors = await deploy("TwoDoors");
+    const { provider, deploy, playerAddr, player2Addr,
+      ownerSigner, backendSigner, playerSigner, player2Signer } = await setupEnv(output);
+    const doors = await deploy("TwoDoorsHarness", "TwoDoorsHarness.sol");
     const asPlayer = doors.connect(playerSigner);
+    const asPlayer2 = doors.connect(player2Signer);
     const asBackend = doors.connect(backendSigner);
     const asOwner = doors.connect(ownerSigner);
 
     await (await asOwner.fundHouse({ value: ethers.parseEther("100") })).wait();
 
-    await expectRevert(asPlayer.placeBet(3, { value: ethers.parseEther("1") }), "rejects door outside {1,2}");
-
     const bet = ethers.parseEther("1");
-    await (await asPlayer.placeBet(1, { value: bet })).wait();
-    ok("accepts valid door bet");
 
+    // --- Winning path: choose door 1, force treasure door 1 ---
+    await expectRevert(asPlayer.placeBet({ value: 0 }), "rejects zero-value stake");
+    await (await asPlayer.placeBet({ value: bet })).wait();
+    ok("player can stake to start a game");
+
+    let g = await doors.getGame(playerAddr);
+    if (g.status === 1n && g.betAmount === bet) ok("game state = Staked after placeBet");
+    else bad("game state = Staked after placeBet", JSON.stringify(g));
+
+    await expectRevert(asPlayer.placeBet({ value: bet }), "cannot stake a second game while one is in progress");
+    await expectRevert(asPlayer.chooseDoor(3), "rejects door outside {1,2}");
+    await expectRevert(asBackend.resolveGame(playerAddr), "cannot resolve before a door is chosen");
+
+    await (await asPlayer.chooseDoor(1)).wait();
+    ok("player can choose a door");
+    g = await doors.getGame(playerAddr);
+    if (g.status === 2n && g.chosenDoor === 1n) ok("game state = DoorChosen after chooseDoor");
+    else bad("game state = DoorChosen after chooseDoor", JSON.stringify(g));
+
+    await expectRevert(asPlayer.resolveGame(playerAddr), "player cannot resolve their own game");
+
+    await (await asOwner.setForcedDoor(1)).wait(); // treasure behind door 1 => player wins
     const balBefore = await rawBalance(provider, playerAddr);
-    const payout = bet * 2n;
-    await (await asBackend.resolveGame(playerAddr, 1, payout)).wait();
+    await (await asBackend.resolveGame(playerAddr)).wait();
     const balAfter = await rawBalance(provider, playerAddr);
-    if (balAfter - balBefore === payout) ok("correct-door resolveGame pays exact 2x payout");
-    else bad("correct-door resolveGame pays exact 2x payout", `${balAfter - balBefore} != ${payout}`);
+    const payout = bet * 2n;
+    if (balAfter - balBefore === payout) ok("winning resolve pays exact 2x from treasury");
+    else bad("winning resolve pays exact 2x from treasury", `${balAfter - balBefore} != ${payout}`);
 
-    await expectRevert(doors.connect(player2Signer).resolveGame(playerAddr, 1, 1n), "non-backend/owner cannot resolveGame");
+    g = await doors.getGame(playerAddr);
+    if (g.status === 3n && g.won === true && g.treasureDoor === 1n) ok("game marked Resolved + won");
+    else bad("game marked Resolved + won", JSON.stringify(g));
+
+    await expectRevert(asBackend.resolveGame(playerAddr), "cannot resolve an already-resolved game");
+
+    // --- Losing path: choose door 1, force treasure door 2 ---
+    await (await asPlayer2.placeBet({ value: bet })).wait();
+    await (await asPlayer2.chooseDoor(1)).wait();
+    await (await asOwner.setForcedDoor(2)).wait(); // treasure behind door 2 => player2 loses
+    const p2Before = await rawBalance(provider, player2Addr);
+    await (await asBackend.resolveGame(player2Addr)).wait();
+    const p2After = await rawBalance(provider, player2Addr);
+    if (p2After === p2Before) ok("losing resolve transfers nothing to player");
+    else bad("losing resolve transfers nothing to player", `${p2After - p2Before}`);
+    const g2 = await doors.getGame(player2Addr);
+    if (g2.won === false && g2.status === 3n) ok("losing game marked Resolved + not won");
+    else bad("losing game marked Resolved + not won", JSON.stringify(g2));
+
+    // --- Stats accumulate; player can start a fresh game after resolution ---
+    const s = await doors.getStats(playerAddr);
+    if (s.betsPlaced === 1n && s.totalWagered === bet && s.totalWon === payout) ok("player stats accumulate correctly");
+    else bad("player stats accumulate correctly", JSON.stringify(s));
+    await (await asPlayer.placeBet({ value: bet })).wait();
+    ok("player can start a new game after the previous one resolved");
+
+    // --- reclaimStake timeout safety valve ---
+    await expectRevert(asPlayer.reclaimStake(), "cannot reclaim before the resolve timeout");
+    await provider.request({ method: "evm_increaseTime", params: [3601] });
+    await provider.request({ method: "evm_mine", params: [] });
+    const rBefore = await rawBalance(provider, playerAddr);
+    // Pass an explicit gasLimit so ethers skips eth_estimateGas: after a manual
+    // evm_increaseTime jump its estimateGas simulates against a stale timestamp
+    // and spuriously reverts. The real mined tx runs against the bumped time and
+    // succeeds; .wait() below still surfaces any genuine revert.
+    await (await asPlayer.reclaimStake({ gasLimit: 200000 })).wait();
+    const rAfter = await rawBalance(provider, playerAddr);
+    if (rAfter > rBefore) ok("player can reclaim a stuck stake after timeout");
+    else bad("player can reclaim a stuck stake after timeout", `${rAfter - rBefore}`);
+
+    // --- pause blocks new stakes ---
+    await (await asOwner.pause()).wait();
+    await expectRevert(asPlayer.placeBet({ value: bet }), "paused contract rejects placeBet");
+    await (await asOwner.unpause()).wait();
   }
 
   console.log(`\n${pass} passed, ${fail} failed`);
