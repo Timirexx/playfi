@@ -1,22 +1,17 @@
-// Two Doors game contract — independent from the vault and the other games.
-// The treasure door is generated on-chain by Hedera's PRNG; the backend keeper
-// triggers the reveal via resolveGame.
+// Two Doors game — points at the already-deployed, funded shared treasury
+// (formerly "GameTreasury") on Hedera testnet. This is a live contract with
+// placeBet() + settleGame(), so the game works without deploying anything new.
 //
-// The address below is a PLACEHOLDER. Deploy the contract with:
-//     node scripts/deployGame.js TwoDoors
-// which overwrites this file with the real address + full ABI.
-export const TWO_DOORS_ADDRESS = "0x0000000000000000000000000000000000000000";
+// The fully-independent, on-chain-PRNG TwoDoors contract lives in
+// contracts/games/TwoDoors.sol and is ready to deploy (scripts/deployGame.js
+// TwoDoors) whenever a funded deployer key is available; switch this address +
+// ABI to that deployment to upgrade.
+export const TWO_DOORS_ADDRESS = "0x83F2DAEE3765ffEFdD02812E96d23Bb293ae0EAF";
 export const TWO_DOORS_ABI = [
-    "function placeBet() payable",
-    "function chooseDoor(uint8 door)",
-    "function reclaimStake()",
-    "function getGame(address player) view returns (tuple(uint256 betAmount, uint8 chosenDoor, uint8 treasureDoor, uint8 status, bool won, uint64 stakedAt) game)",
-    "function getStatus(address player) view returns (uint8)",
-    "function getStats(address player) view returns (tuple(uint256 betsPlaced, uint256 totalWagered, uint256 totalWon) stats)",
-    "event BetPlaced(address indexed player, uint256 betAmount)",
-    "event GameStarted(address indexed player, uint256 betAmount)",
-    "event DoorSelected(address indexed player, uint8 door)",
-    "event GameWon(address indexed player, uint8 chosenDoor, uint8 treasureDoor, uint256 payout)",
-    "event GameLost(address indexed player, uint8 chosenDoor, uint8 treasureDoor)",
-    "event PayoutSent(address indexed player, uint256 amount)"
+    "function placeBet() public payable",
+    "function settleGame(address user, uint256 winAmount) public",
+    "function houseLiquidity() public view returns (uint256)",
+    "function getVaultBalance() public view returns (uint256)",
+    "event BetPlaced(address indexed user, uint256 amount)",
+    "event GameResult(address indexed user, uint256 won)"
 ];

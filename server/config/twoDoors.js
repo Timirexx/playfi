@@ -1,24 +1,10 @@
-// Two Doors game contract config for the backend keeper.
-// The backend's authorized signer (TREASURY_PRIVATE_KEY, which must equal the
-// contract's backendSigner) calls resolveGame to trigger the on-chain PRNG reveal.
+// Two Doors backend config — points at the already-deployed shared treasury
+// (formerly "GameTreasury") on Hedera testnet. The backend verifies the bet
+// transaction, decides the 50/50 outcome, and pays winners via settleGame.
 //
-// The address below is a PLACEHOLDER. Deploying with
-//     node scripts/deployGame.js TwoDoors
-// overwrites this file with the real address + full ABI.
-export const TWO_DOORS_ADDRESS = "0x0000000000000000000000000000000000000000";
-export const TWO_DOORS_ABI = [
-    "function resolveGame(address player)",
-    "function getGame(address player) view returns (tuple(uint256 betAmount, uint8 chosenDoor, uint8 treasureDoor, uint8 status, bool won, uint64 stakedAt) game)",
-    "function getStatus(address player) view returns (uint8)",
-    "event GameWon(address indexed player, uint8 chosenDoor, uint8 treasureDoor, uint256 payout)",
-    "event GameLost(address indexed player, uint8 chosenDoor, uint8 treasureDoor)",
-    "event PayoutSent(address indexed player, uint256 amount)"
+// The backend signs with TREASURY_PRIVATE_KEY, which must be authorized on this
+// contract (owner or an authorizedGames entry) to call settleGame.
+export const TWO_DOORS_ADDRESS = "0x83F2DAEE3765ffEFdD02812E96d23Bb293ae0EAF";
+export const TWO_DOORS_SETTLE_ABI = [
+    "function settleGame(address user, uint256 winAmount) public"
 ];
-
-// Matches TwoDoors.Status in the contract.
-export const TWO_DOORS_STATUS = {
-    NONE: 0,
-    STAKED: 1,
-    DOOR_CHOSEN: 2,
-    RESOLVED: 3,
-};

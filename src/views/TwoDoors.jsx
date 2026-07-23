@@ -85,35 +85,23 @@ const TwoDoors = () => {
     };
 
     const handlePlay = async (doorNumber) => {
-        if (!isStaked || !wagerTxId || isRunning || !walletProvider) return;
+        if (!isStaked || !wagerTxId || isRunning) return;
         setIsRunning(true);
         setSelectedDoor(doorNumber);
+        setGameState('opening');
 
         try {
-            // 2a. Commit the chosen door on-chain (chooseDoor). This is a wallet tx —
-            // the door choice is recorded on the contract, no outcome decided yet.
-            window.dispatchEvent(new CustomEvent('showTxOverlay', {
-                detail: { title: `Door ${doorNumber}`, desc: 'Confirm your choice in your wallet...' }
-            }));
-
-            const provider = new ethers.BrowserProvider(walletProvider);
-            const signer = await provider.getSigner();
-            const gameContract = new ethers.Contract(TWO_DOORS_ADDRESS, TWO_DOORS_ABI, signer);
-
-            const chooseTx = await gameContract.chooseDoor(doorNumber);
-            await chooseTx.wait();
-
-            // 2b. Ask the backend keeper to trigger the on-chain PRNG reveal + payout.
-            window.dispatchEvent(new CustomEvent('showTxOverlay', {
-                detail: { title: 'Revealing...', desc: 'Rolling the on-chain randomness...' }
-            }));
-            setGameState('opening');
-
+            // Ask the backend to verify the stake, decide the outcome, and settle.
             const API_BASE = window.location.hostname === 'localhost' ? "http://localhost:3001" : "https://server-chi-rose-76.vercel.app";
             const response = await fetch(`${API_BASE}/api/twodoors`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userAddress: address })
+                body: JSON.stringify({
+                    transactionId: wagerTxId,
+                    userAddress: address,
+                    betAmount: betAmount,
+                    selectedDoor: doorNumber
+                })
             });
 
             // The API should always return JSON. If we got HTML (a 404 or a crashed
@@ -132,7 +120,6 @@ const TwoDoors = () => {
                 throw new Error(data.error || "Failed to resolve game");
             }
 
-            window.dispatchEvent(new CustomEvent('hideTxOverlay'));
             setTreasureDoor(data.treasureDoor);
 
             // Hold on the opening animation briefly, then reveal the result.
