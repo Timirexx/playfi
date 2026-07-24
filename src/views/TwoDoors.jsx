@@ -3,10 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { useWallet } from '../context/WalletContext';
 import { ethers } from 'ethers';
 import { useAppKitProvider } from '@reown/appkit/react';
-import { TWO_DOORS_ADDRESS, TWO_DOORS_ABI } from '../contracts/TwoDoors';
+import { PLAYFI_HUB_ADDRESS, PLAYFI_HUB_ABI, GAME_ID } from '../contracts/PlayFiGameHub';
 
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
-const isContractDeployed = TWO_DOORS_ADDRESS && TWO_DOORS_ADDRESS !== ZERO_ADDRESS;
+const isContractDeployed = PLAYFI_HUB_ADDRESS && PLAYFI_HUB_ADDRESS !== ZERO_ADDRESS;
 
 const TwoDoors = () => {
     const navigate = useNavigate();
@@ -42,13 +42,13 @@ const TwoDoors = () => {
         }));
 
         try {
-            // 1. On-chain stake into the Two Doors treasury (placeBet).
+            // 1. On-chain stake through the shared game hub (funds -> treasury).
             const provider = new ethers.BrowserProvider(walletProvider);
             const signer = await provider.getSigner();
-            const gameContract = new ethers.Contract(TWO_DOORS_ADDRESS, TWO_DOORS_ABI, signer);
+            const gameContract = new ethers.Contract(PLAYFI_HUB_ADDRESS, PLAYFI_HUB_ABI, signer);
 
             const valWei = ethers.parseUnits(betAmount, 18);
-            const tx = await gameContract.placeBet({ value: valWei });
+            const tx = await gameContract.placeBet(GAME_ID.TWO_DOORS, { value: valWei });
 
             window.dispatchEvent(new CustomEvent('showTxOverlay', {
                 detail: { title: 'Verifying Wager', desc: 'Waiting for network confirmation...' }

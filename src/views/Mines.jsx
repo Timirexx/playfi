@@ -4,7 +4,7 @@ import { useWallet } from '../context/WalletContext';
 import axios from 'axios';
 import { ethers } from 'ethers';
 import { useAppKitProvider } from '@reown/appkit/react';
-import { PLAYFI_VAULT_ADDRESS, PLAYFI_VAULT_ABI } from '../contracts/PlayFiVault';
+import { PLAYFI_HUB_ADDRESS, PLAYFI_HUB_ABI, GAME_ID } from '../contracts/PlayFiGameHub';
 
 // --- MATH UTILS FOR 16-BOX PREVIEW ---
 const factorial = (n) => {
@@ -63,10 +63,10 @@ const Mines = () => {
             // 1. Check Balance and Trigger Buy-In Deposit to Vault if needed
             const provider = new ethers.BrowserProvider(walletProvider);
             const signer = await provider.getSigner();
-            const vaultContract = new ethers.Contract(PLAYFI_VAULT_ADDRESS, PLAYFI_VAULT_ABI, signer);
+            const vaultContract = new ethers.Contract(PLAYFI_HUB_ADDRESS, PLAYFI_HUB_ABI, signer);
 
             const valWei = ethers.parseUnits(betAmount, 18);
-            const tx = await vaultContract.placeBet({ value: valWei });
+            const tx = await vaultContract.placeBet(GAME_ID.MINES, { value: valWei });
             await tx.wait();
 
             // 2. Notify Backend to Start Game

@@ -1,6 +1,6 @@
 import { ethers } from "ethers";
 import dotenv from "dotenv";
-import { TWO_DOORS_ADDRESS, TWO_DOORS_SETTLE_ABI } from "../config/twoDoors.js";
+import { PLAYFI_HUB_ADDRESS, PLAYFI_HUB_ABI, GAME_ID } from "../config/playFiGameHub.js";
 
 dotenv.config();
 
@@ -12,28 +12,31 @@ const processedTransactions = new Set();
 /**
  * Two Doors resolution.
  *
- * Flow: the player has already staked on-chain via placeBet() (their HBAR is in
- * the treasury). This endpoint verifies that stake transaction, decides the
- * 50/50 outcome server-side, and pays 2x to winners via settleGame().
+ * The player has already staked via the game hub's placeBet(TWO_DOORS) — their
+ * HBAR is in the shared treasury (minus the 5% platform fee). This endpoint
+ * verifies that stake, decides the 50/50 outcome, and instructs the hub to pay
+ * 2x to winners via settleBet (which pays from the treasury).
  */
 export const handleTwoDoors = async (req, res) => {
     const { transactionId, userAddress, betAmount, selectedDoor } = req.body;
 
-    console.log(`[TWO DOORS] Request from ${userAddress} | Tx: ${transactionId} | Door: ${selectedDoor}`);
+    console.log(`[TWO DOORS] ${userAddress} | Tx: ${transactionId} | Door: ${selectedDoor}`);
 
     if (!transactionId || !userAddress || !betAmount || !selectedDoor) {
         return res.status(400).json({ success: false, error: "Missing parameters" });
     }
+    if (PLAYFI_HUB_ADDRESS === "0x0000000000000000000000000000000000000000") {
+        return res.status(500).json({ success: false, error: "Game hub not deployed yet." });
+    }
 
     try {
-        // 1. IDEMPOTENCY CHECK
         if (processedTransactions.has(transactionId)) {
             return res.status(400).json({ success: false, error: "Transaction already processed." });
         }
 
-        // 2. VERIFY THE STAKE TRANSACTION (recipient + amount) with RPC retry
         const provider = new ethers.JsonRpcProvider(HASHIO_RPC);
 
+        // Verify the stake transaction (recipient + amount) with RPC retry.
         let txReceipt = null;
         let txResponse = null;
         let attempts = 0;
@@ -42,55 +45,45 @@ export const handleTwoDoors = async (req, res) => {
             txResponse = await provider.getTransaction(transactionId);
             if (txReceipt && txReceipt.status === 1 && txResponse) break;
             attempts++;
-            await new Promise((resolve) => setTimeout(resolve, 1500));
+            await new Promise((r) => setTimeout(r, 1500));
         }
-
         if (!txReceipt || txReceipt.status !== 1 || !txResponse) {
             return res.status(400).json({ success: false, error: "Transaction failed or not found after retries." });
         }
-
-        if (!txResponse.to || txResponse.to.toLowerCase() !== TWO_DOORS_ADDRESS.toLowerCase()) {
+        if (!txResponse.to || txResponse.to.toLowerCase() !== PLAYFI_HUB_ADDRESS.toLowerCase()) {
             return res.status(400).json({ success: false, error: "Incorrect payment recipient." });
         }
-
         const expectedWei = ethers.parseUnits(betAmount.toString(), 18);
         if (txResponse.value < expectedWei) {
             return res.status(400).json({ success: false, error: "Incorrect payment amount." });
         }
 
-        // Mark as processed
         processedTransactions.add(transactionId);
 
-        // 3. DECIDE OUTCOME (treasure behind door 1 or 2, 50/50)
+        // Decide outcome (treasure behind door 1 or 2, 50/50).
         const treasureDoor = Math.random() < 0.5 ? 1 : 2;
         const isWin = parseInt(selectedDoor) === treasureDoor;
 
-        // 4. SETTLE — pay 2x to winners; losers' stake stays in the treasury.
+        // Settle via the hub. winAmount is in 18-decimal weibars to match the bet.
         let payoutTransactionId = null;
         try {
             const wallet = new ethers.Wallet(process.env.TREASURY_PRIVATE_KEY, provider);
-            const contract = new ethers.Contract(TWO_DOORS_ADDRESS, TWO_DOORS_SETTLE_ABI, wallet);
+            const hub = new ethers.Contract(PLAYFI_HUB_ADDRESS, PLAYFI_HUB_ABI, wallet);
+            const winWei = isWin ? ethers.parseUnits((parseFloat(betAmount) * 2).toString(), 18) : 0n;
 
-            const winTiny = isWin ? ethers.parseUnits((parseFloat(betAmount) * 2).toFixed(8), 8) : 0n;
-
-            // Fire and forget: pays out if winTiny > 0, otherwise just emits the event.
-            contract.settleGame(userAddress, winTiny, { gasLimit: 500000 })
+            hub.settleBet(userAddress, GAME_ID.TWO_DOORS, winWei, { gasLimit: 600000 })
                 .then((tx) => {
                     payoutTransactionId = tx.hash;
-                    return tx.wait().catch((err) => console.error("[TWO DOORS] Settlement confirm error:", err.message));
+                    return tx.wait().catch((err) => console.error("[TWO DOORS] Settle confirm error:", err.message));
                 })
-                .catch((err) => console.error("[TWO DOORS] Settlement submit error:", err.message));
+                .catch((err) => console.error("[TWO DOORS] Settle submit error:", err.message));
         } catch (contractErr) {
-            console.error("[TWO DOORS] Contract settlement error:", contractErr.message);
+            console.error("[TWO DOORS] Settlement error:", contractErr.message);
         }
 
-        // 5. RESPONSE
         return res.json({ success: true, isWin, treasureDoor, payoutTransactionId });
     } catch (error) {
-        console.error("Two Doors Error:", error.response?.data || error.message);
-        return res.status(500).json({
-            success: false,
-            error: "Backend processing error. Please check your transaction status.",
-        });
+        console.error("Two Doors Error:", error.message);
+        return res.status(500).json({ success: false, error: "Backend processing error." });
     }
 };

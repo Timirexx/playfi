@@ -1,7 +1,7 @@
 import { ethers } from "ethers";
 import crypto from "crypto";
 import dotenv from "dotenv";
-import { TREASURY_ADDRESS, TREASURY_SETTLE_ABI } from "../config/treasury.js";
+import { PLAYFI_HUB_ADDRESS, PLAYFI_HUB_ABI, GAME_ID } from "../config/playFiGameHub.js";
 
 dotenv.config();
 
@@ -62,7 +62,7 @@ export const startMines = async (req, res) => {
             return res.status(400).json({ success: false, error: "Transaction failed or not found after retries." });
         }
 
-        const expectedAddress = TREASURY_ADDRESS.toLowerCase();
+        const expectedAddress = PLAYFI_HUB_ADDRESS.toLowerCase();
         if (!txResponse.to || txResponse.to.toLowerCase() !== expectedAddress) {
             return res.status(400).json({ success: false, error: "Incorrect payment recipient." });
         }
@@ -156,18 +156,19 @@ async function settleVault(userAddress, winAmount, betAmount) {
     try {
         const provider = new ethers.JsonRpcProvider("https://testnet.hashio.io/api");
         const wallet = new ethers.Wallet(process.env.TREASURY_PRIVATE_KEY, provider);
-        const contract = new ethers.Contract(TREASURY_ADDRESS, TREASURY_SETTLE_ABI, wallet);
+        const hub = new ethers.Contract(PLAYFI_HUB_ADDRESS, PLAYFI_HUB_ABI, wallet);
 
-        const winTiny = ethers.parseUnits(winAmount.toFixed(8), 8);
+        // winAmount in 18-decimal weibars to match the placeBet value. 0 = loss.
+        const winWei = winAmount > 0 ? ethers.parseUnits(winAmount.toFixed(8), 18) : 0n;
 
         // Add gasLimit to avoid Hashio INSUFFICIENT_TX_FEE error
-        const tx = await contract.settleGame(userAddress, winTiny, { gasLimit: 500000 });
-        
+        const tx = await hub.settleBet(userAddress, GAME_ID.MINES, winWei, { gasLimit: 600000 });
+
         // Fire and forget the confirmation wait so the frontend gets an instant response
         tx.wait().catch(err => console.error("[MINES] Settlement Confirmation Error:", err.message));
     } catch (err) {
         console.error("[MINES] Settlement Submission Error:", err.message);
-        // Swallow error to prevent HTTP 500. The user lost/won visually, 
+        // Swallow error to prevent HTTP 500. The user lost/won visually,
         // the blockchain will be corrected if needed, but the game must continue instantly.
     }
 }

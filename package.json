@@ -9,8 +9,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "test:games": "node test/games.test.cjs",
-    "test:treasury": "node test/treasury.test.cjs"
+    "test:treasury": "node test/treasury.test.cjs",
+    "test:hub": "node test/hub.test.cjs"
   },
   "author": "",
   "license": "ISC",
