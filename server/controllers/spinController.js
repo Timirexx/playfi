@@ -8,6 +8,7 @@ import {
 import { ethers } from "ethers";
 import axios from "axios";
 import dotenv from "dotenv";
+import { PLAYFI_HUB_ADDRESS, PLAYFI_HUB_ABI, GAME_ID } from "../config/playFiGameHub.js";
 
 dotenv.config();
 
@@ -77,7 +78,7 @@ export const handleSpin = async (req, res) => {
             return res.status(400).json({ success: false, error: "Transaction failed or not found after retries." });
         }
 
-        const expectedAddress = "0x83F2DAEE3765ffEFdD02812E96d23Bb293ae0EAF".toLowerCase();
+        const expectedAddress = PLAYFI_HUB_ADDRESS.toLowerCase();
         if (!txResponse.to || txResponse.to.toLowerCase() !== expectedAddress) {
             return res.status(400).json({ success: false, error: "Incorrect payment recipient." });
         }
@@ -104,21 +105,16 @@ export const handleSpin = async (req, res) => {
         // 5. CONTRACT SETTLEMENT
         let payoutTransactionId = null;
         try {
-            const gamesAddress = "0x83F2DAEE3765ffEFdD02812E96d23Bb293ae0EAF";
             const provider = new ethers.JsonRpcProvider("https://testnet.hashio.io/api");
             const wallet = new ethers.Wallet(process.env.TREASURY_PRIVATE_KEY, provider);
-            
-            const abi = [
-                "function settleGame(address user, uint256 winAmount) public"
-            ];
-            const contract = new ethers.Contract(gamesAddress, abi, wallet);
-            
+            const hub = new ethers.Contract(PLAYFI_HUB_ADDRESS, PLAYFI_HUB_ABI, wallet);
+
             const multiplierValue = parseInt(landedMultiplier.replace("x", ""));
-            // Multiply betAmount (from frontend) by multiplier
-            const winTiny = isWin ? ethers.parseUnits((parseFloat(betAmount) * multiplierValue).toFixed(8), 8) : 0n;
-            
-            // Fire and forget: if winTiny > 0, it pays out. If 0, it just emits event.
-            contract.settleGame(userAddress, winTiny, { gasLimit: 500000 })
+            // winAmount = bet * multiplier, in 18-decimal weibars to match the bet. 0 = loss.
+            const winWei = isWin ? ethers.parseUnits((parseFloat(betAmount) * multiplierValue).toString(), 18) : 0n;
+
+            // Fire and forget: if winWei > 0, it pays out. If 0, it just emits the event.
+            hub.settleBet(userAddress, GAME_ID.SPIN, winWei, { gasLimit: 600000 })
                 .then(tx => tx.wait().catch(err => console.error("Settlement Confirm Error:", err)))
                 .catch(err => console.error("Settlement Submit Error:", err));
 

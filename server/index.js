@@ -54,6 +54,13 @@ app.post('/api/mines/start', startMines);
 app.post('/api/mines/reveal', revealTile);
 app.post('/api/mines/cashout', cashoutMines);
 
-app.listen(PORT, () => {
-    console.log(`🚀 PlayFi Backend running on http://localhost:${PORT}`);
-});
+// On Vercel the app runs as a serverless function, which needs the Express app
+// exported as the request handler — calling app.listen() there doesn't bind a
+// reachable port and leaves routes returning 404. Locally we still listen.
+if (!process.env.VERCEL) {
+    app.listen(PORT, () => {
+        console.log(`🚀 PlayFi Backend running on http://localhost:${PORT}`);
+    });
+}
+
+export default app;

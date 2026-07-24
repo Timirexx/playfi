@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useWallet } from '../context/WalletContext';
 import { ethers } from 'ethers';
 import { useAppKitProvider } from '@reown/appkit/react';
-import { GAME_TREASURY_ADDRESS, GAME_TREASURY_ABI } from '../contracts/GameTreasury';
+import { PLAYFI_HUB_ADDRESS, PLAYFI_HUB_ABI, GAME_ID } from '../contracts/PlayFiGameHub';
 
 const Spin = () => {
     const navigate = useNavigate();
@@ -105,12 +105,12 @@ const Spin = () => {
             // 1. On-Chain Buy-In
             const provider = new ethers.BrowserProvider(walletProvider);
             const signer = await provider.getSigner();
-            const vaultContract = new ethers.Contract(GAME_TREASURY_ADDRESS, GAME_TREASURY_ABI, signer);
+            const vaultContract = new ethers.Contract(PLAYFI_HUB_ADDRESS, PLAYFI_HUB_ABI, signer);
 
             const valWei = ethers.parseUnits(betAmount, 18);
-            
-            // Pay-per-game: Transfer exactly the bet amount directly to GameTreasury
-            const tx = await vaultContract.placeBet({ value: valWei });
+
+            // Pay-per-game: bet flows through the shared hub into the treasury
+            const tx = await vaultContract.placeBet(GAME_ID.SPIN, { value: valWei });
             await tx.wait();
 
             // 2. Fetch result from backend
